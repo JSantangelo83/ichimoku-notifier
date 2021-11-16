@@ -9,32 +9,83 @@ from matplotlib.patches import Rectangle
 mpl.style.use('seaborn')
 
 #Function definitions
-def compareLast(serieA, serieB, margin=6, shift=0, serieC=''):
-    if (serieA.iloc[-1] > serieB.iloc[shift if shift else -1]) & ((serieA.iloc[-1] > serieC.iloc[shift if shift else -1]) if type(serieC) != str else True): return 1
-    if (serieA.iloc[-1] < serieB.iloc[shift if shift else -1]) & ((serieA.iloc[-1] < serieC.iloc[shift if shift else -1]) if type(serieC)!=str else True) : return -1
+def compareLast(serieA, serieB, margin=1, shift=0, shiftA=0, serieC=''):
+    if (serieA.iloc[shiftA if shiftA else -1] > serieB.iloc[shift if shift else -1]) & ((serieA.iloc[shiftA if shiftA else -1] > serieC.iloc[shift if shift else -1]) if type(serieC) != str else True): return 1
+    if (serieA.iloc[shiftA if shiftA else -1] < serieB.iloc[shift if shift else -1]) & ((serieA.iloc[shiftA if shiftA else -1] < serieC.iloc[shift if shift else -1]) if type(serieC)!=str else True) : return -1
     return 0
-    # if (serieA.iloc[-1] > serieB.iloc[shift if shift else -1]) &
-    # ((serieA.iloc[-1] > serieC.iloc[shift if shift else -1]) if type(serieC) != str else True) &
-        # ((serieA.iloc[-margin] < serieB.iloc[shift-margin]) |
-        # ((serieA.iloc[-margin] < serieC.iloc[shift-margin]) if type(serieC) != str else False)): return -1
-    
 
-interval='4h'
+def wrapper(df, margin=1):
+	conditions = 0
+
+	#Conversion and baseline
+	conditions += compareLast(df.ichimoku_conversion_line, df.ichimoku_base_line)
+	print('conversion and baseline: ',end='')
+	print(compareLast(df.ichimoku_conversion_line, df.ichimoku_base_line))
+
+	#Cloud
+	conditions += compareLast(df.ichimoku_a, df.ichimoku_b)
+	print('ichimoku cloud: ',end='')
+	print(compareLast(df.ichimoku_a, df.ichimoku_b))
+
+	#Price
+	conditions += compareLast(df.close, df.ichimoku_a, serieC=df.ichimoku_b, shift=-26)
+	print('price and ichimoku cloud: ',end='')
+	print(compareLast(df.close, df.ichimoku_a, serieC=df.ichimoku_b, shift=-26))
+
+	#Lagging Span
+	conditions += compareLast(df.ichimoku_lagging_span, df.ichimoku_a, serieC=df.ichimoku_b, shift=-26*2)
+	print('lagging span and ichimoku cloud: ',end='')
+	print(compareLast(df.ichimoku_lagging_span, df.ichimoku_a, serieC=df.ichimoku_b, shift=-26*2))
+	
+	conditions2 = 0
+
+	#Conversion and baseline
+	conditions2 += compareLast(df.ichimoku_conversion_line, df.ichimoku_base_line, shiftA=-margin)
+	print('conversion and baseline 2: ',end='')
+	print(compareLast(df.ichimoku_conversion_line, df.ichimoku_base_line, shiftA=-margin))
+
+    #Cloud
+	conditions2 += compareLast(df.ichimoku_a, df.ichimoku_b, shiftA=-margin)
+	print('price and ichimoku cloud 2: ',end='')
+	print(compareLast(df.ichimoku_a, df.ichimoku_b, shiftA=-margin))
+
+	#Price
+	conditions2 += compareLast(df.close, df.ichimoku_a, serieC=df.ichimoku_b, shift=-26-margin, shiftA=-margin)
+	print('price and ichimoku cloud 2: ',end='')
+	print(compareLast(df.close, df.ichimoku_a, serieC=df.ichimoku_b, shift=-26-margin, shiftA=-margin))
+
+	#Lagging Span
+	conditions2 += compareLast(df.ichimoku_lagging_span, df.ichimoku_a, serieC=df.ichimoku_b, shift=-(26*2)-margin, shiftA=-margin)
+	print('lagging span and ichimoku cloud 2: ',end='')
+	print(compareLast(df.ichimoku_lagging_span, df.ichimoku_a, serieC=df.ichimoku_b, shift=-(26*2)-margin, shiftA=-margin))	
+	print(abs(conditions))
+	print(conditions2)
+	print(conditions2 != conditions)
+	print(abs(conditions)== 4 and conditions2 != conditions)
+
+	if(abs(conditions)== 4 and conditions2 != conditions ):
+		return (True, conditions)
+	return (False, conditions)
+
+interval='1h'
 symbols = ['BTCUSDT','ETHUSDT','LINKUSDT','CAKEUSDT','LUNAUSDT','SOLUSDT']
 coin = 0
 limit='100'
-def pene():
-# for i in range(len(symbols) - 1):
-    # coin = i
+
+firstcandles = 77
+
+# def pene():
+for i in range(len(symbols) - 1):
+    coin = i
     print(f'checking {symbols[coin]}')
     
     rawCandles=json.loads(requests.get(f'https://api1.binance.com/api/v3/klines?symbol={symbols[coin]}&interval={interval}&limit={limit}').content.decode())
-    ts = [candle[0] for candle in rawCandles]
-    op = [candle[1] for candle in rawCandles]
-    high = [candle[2] for candle in rawCandles]
-    low = [candle[3] for candle in rawCandles]
-    close = [candle[4] for candle in rawCandles]
-    vol = [candle[5] for candle in rawCandles]
+    ts = [candle[0] for candle in rawCandles][:firstcandles]
+    op = [candle[1] for candle in rawCandles][:firstcandles]
+    high = [candle[2] for candle in rawCandles][:firstcandles]
+    low = [candle[3] for candle in rawCandles][:firstcandles]
+    close = [candle[4] for candle in rawCandles][:firstcandles]
+    vol = [candle[5] for candle in rawCandles][:firstcandles]
 
     formatedCandles = {'timestamp': ts, 'open': op, 'high': high, 'low': low, 'close': close, 'volume': vol}
 
@@ -55,84 +106,76 @@ def pene():
     df.to_csv('ichimoku.csv', encoding='utf-8')
     
     fig, ax = plt.subplots()
-
-    #widths of candlestick
-    width = .4
-    width2 = .05
-    #up and down prices
-    up = df.shift(periods=-26)[df.close>=df.open]
-    down = df.shift(periods=-26)[df.close<df.open]
-    #colors in candlestick
-    col1 = 'green'
-    col2 = 'red'
-    
-    #plot up prices
-    plt.bar(up.index,up.close-up.open,width,bottom=up.open,color=col1)
-    plt.bar(up.index,up.high-up.close,width2,bottom=up.close,color=col1)
-    plt.bar(up.index,up.low-up.open,width2,bottom=up.open,color=col1)
-    
-    #plot down prices
-    plt.bar(down.index,down.close-down.open,width,bottom=down.open,color=col2)
-    plt.bar(down.index,down.high-down.open,width2,bottom=down.open,color=col2)
-    plt.bar(down.index,down.low-down.close,width2,bottom=down.close,color=col2)
+ 
+    # #widths of candlestick
+    # width = .4
+    # width2 = .05
+    # #up and down prices
+    # up = df.shift(periods=-26)[df.close>=df.open]
+    # down = df.shift(periods=-26)[df.close<df.open]
+    # #colors in candlestick
+    # col1 = 'green'
+    # col2 = 'red'
+    # 
+    # #plot up prices
+    # plt.bar(up.index,up.close-up.open,width,bottom=up.open,color=col1)
+    # plt.bar(up.index,up.high-up.close,width2,bottom=up.close,color=col1)
+    # plt.bar(up.index,up.low-up.open,width2,bottom=up.open,color=col1)
+    # 
+    # #plot down prices
+    # plt.bar(down.index,down.close-down.open,width,bottom=down.open,color=col2)
+    # plt.bar(down.index,down.high-down.open,width2,bottom=down.open,color=col2)
+    # plt.bar(down.index,down.low-down.close,width2,bottom=down.close,color=col2)
 
     
     ax.plot(df.ichimoku_a, label='Ichimoku A', color='#53B96A', linewidth=0)
-    ax.plot(df.ichimoku_b, label='Ichimoku B', color='#E9838D', linewidth=0)
+    ax.plot(df.ichimoku_a, label='Ichimoku A', color='#53B96A', linewidth=0)
+    ax.plot(df.close.shift(periods=-26), label='Price', color='#484848', linewidth=1)
 
     ax.fill_between(df.ichimoku_a.index, df.ichimoku_a, df.ichimoku_b, where=df.ichimoku_a >= df.ichimoku_b, facecolor='#53B96A', alpha=0.5, interpolate=True)
     ax.fill_between(df.ichimoku_b.index, df.ichimoku_a, df.ichimoku_b, where=df.ichimoku_a <= df.ichimoku_b, facecolor='#E9838D', alpha=0.5, interpolate=True)
 
-    ax.plot(df.ichimoku_base_line.shift(periods=-26), label='Base Line', color='#007BFF', linewidth=1)
-    ax.plot(df.ichimoku_conversion_line.shift(periods=-26), label='Conversion Line', color='#FFC107', linewidth=1)
-    ax.plot(df['close'].shift(periods=-26*2), label='Lagging Span', color='#7F00FF', linewidth=1)
+    ax.plot(df.ichimoku_base_line.shift(periods=-26), label='Base Line', color='#FFC107', linewidth=1)
+    ax.plot(df.ichimoku_conversion_line.shift(periods=-26), label='Conversion Line', color='#007BFF', linewidth=1)
+    ax.plot(df.close.shift(periods=-26*2), label='Lagging Span', color='#7F00FF', linewidth=1)
 
     plt.title(f'Ichimoku Cloud {symbols[coin]} {interval}')
-    # plt.show()
-
-    conditions = 0
-
-    #Conversion and baseline
-    conditions += compareLast(df.ichimoku_conversion_line, df.ichimoku_base_line)
-    #Cloud
-    conditions += compareLast(df.ichimoku_a, df.ichimoku_b)
-    #Price
-    conditions += compareLast(df.close, df.ichimoku_a, serieC=df.ichimoku_b, shift=-26)
-    #Lagging Span
-    conditions += compareLast(df.ichimoku_lagging_span, df.ichimoku_a, serieC=df.ichimoku_b, shift=-26*2)
+    r = wrapper(df)
 
     #Checking
-    if(conditions == 4): 
+    stoploss = 0
+    takeprofit = 0
+    if(r[0] and r[1] == 4): 
         stoploss = df.ichimoku_b.iloc[-26]
         takeprofit = df.close.iloc[-1] + ((df.close.iloc[-1] - df.ichimoku_b.iloc[-26]) * 2)
-        print(f'''
-        LONG IN {symbols[coin]}
-        SL: {stoploss}
-        TP: {takeprofit}
-        ''')
-    if(conditions == -4):
+        # print(f'''
+        # LONG IN {symbols[coin]}
+        # SL: {stoploss}
+        # TP: {takeprofit}
+        # ''')
+    if(r[0] and r[1] == -4):
         stoploss = df.ichimoku_a.iloc[-26]
         takeprofit = df.close.iloc[-1] - ((df.ichimoku_a.iloc[-26] - df.close.iloc[-1]) * 2)
-        print(f'''
-        SHORT IN {symbols[coin]}
-        SL: {stoploss}
-        TP: {takeprofit}
-        ''')        
-    stoploss = df.ichimoku_b.iloc[-26]
-    takeprofit = df.close.iloc[-1] + ((df.close.iloc[-1] - df.ichimoku_b.iloc[-26]) * 2)
-    ax.add_patch(Rectangle((int(limit)-30, df.close.iloc[-1]), 10,takeprofit - df.close.iloc[-1],
-         facecolor = '#B8DEAB',
-         fill=True,
-         alpha=0.75,
-         lw=5))
+        # print(f'''
+        # SHORT IN {symbols[coin]}
+        # SL: {stoploss}
+        # TP: {takeprofit}
+        # ''')
 
-    ax.add_patch(Rectangle((int(limit)-30, stoploss), 10,df.close.iloc[-1] - stoploss,
-             facecolor = '#F5A5A5',
-             alpha=0.75,
+    if(stoploss and takeprofit):
+        ax.add_patch(Rectangle((int(limit)-30, df.close.iloc[-1]), 10,takeprofit - df.close.iloc[-1],
+             facecolor = '#B8DEAB',
              fill=True,
+             alpha=0.75,
              lw=5))
+
+        ax.add_patch(Rectangle((int(limit)-30, stoploss), 10,df.close.iloc[-1] - stoploss,
+                 facecolor = '#F5A5A5',
+                 alpha=0.75,
+                 fill=True,
+                 lw=5))
     
     plt.legend()
     plt.savefig(f'Ichimoku-{symbols[coin]}.png')
     plt.show()
-pene()
+# pene()
