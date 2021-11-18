@@ -72,7 +72,7 @@ symbols = ['BTCUSDT','ETHUSDT','LINKUSDT','CAKEUSDT','LUNAUSDT','SOLUSDT']
 coin = 0
 limit='100'
 
-firstcandles = 77
+firstcandles = 100
 
 # def pene():
 for i in range(len(symbols) - 1):
@@ -107,30 +107,31 @@ for i in range(len(symbols) - 1):
     
     fig, ax = plt.subplots()
  
-    # #widths of candlestick
-    # width = .4
-    # width2 = .05
-    # #up and down prices
-    # up = df.shift(periods=-26)[df.close>=df.open]
-    # down = df.shift(periods=-26)[df.close<df.open]
-    # #colors in candlestick
-    # col1 = 'green'
-    # col2 = 'red'
-    # 
-    # #plot up prices
-    # plt.bar(up.index,up.close-up.open,width,bottom=up.open,color=col1)
-    # plt.bar(up.index,up.high-up.close,width2,bottom=up.close,color=col1)
-    # plt.bar(up.index,up.low-up.open,width2,bottom=up.open,color=col1)
-    # 
-    # #plot down prices
-    # plt.bar(down.index,down.close-down.open,width,bottom=down.open,color=col2)
-    # plt.bar(down.index,down.high-down.open,width2,bottom=down.open,color=col2)
-    # plt.bar(down.index,down.low-down.close,width2,bottom=down.close,color=col2)
+    #widths of candlestick
+    width = .4
+    width2 = .05
+    #up and down prices
+
+    up = df.loc[df.close > df.open]#.shift(periods=-26)
+    down =  df.loc[df.close < df.open]#.shift(periods=-26)
+    #colors in candlestick
+    col1 = 'green'
+    col2 = 'red'
+
+    #plot up prices
+    plt.bar(up.index- 26,up.close-up.open,width,bottom=up.open,color=col1)
+    plt.bar(up.index- 26,up.high-up.close,width2,bottom=up.close,color=col1)
+    plt.bar(up.index- 26,up.low-up.open,width2,bottom=up.open,color=col1)
+    
+    #plot down prices
+    plt.bar(down.index- 26,down.close-down.open,width,bottom=down.open,color=col2)
+    plt.bar(down.index- 26,down.high-down.open,width2,bottom=down.open,color=col2)
+    plt.bar(down.index- 26,down.low-down.close,width2,bottom=down.close,color=col2)
 
     
     ax.plot(df.ichimoku_a, label='Ichimoku A', color='#53B96A', linewidth=0)
     ax.plot(df.ichimoku_a, label='Ichimoku A', color='#53B96A', linewidth=0)
-    ax.plot(df.close.shift(periods=-26), label='Price', color='#484848', linewidth=1)
+    # ax.plot(df.close.shift(periods=-26), label='Price', color='#484848', linewidth=1)
 
     ax.fill_between(df.ichimoku_a.index, df.ichimoku_a, df.ichimoku_b, where=df.ichimoku_a >= df.ichimoku_b, facecolor='#53B96A', alpha=0.5, interpolate=True)
     ax.fill_between(df.ichimoku_b.index, df.ichimoku_a, df.ichimoku_b, where=df.ichimoku_a <= df.ichimoku_b, facecolor='#E9838D', alpha=0.5, interpolate=True)
