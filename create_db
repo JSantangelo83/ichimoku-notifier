@@ -1,0 +1,62 @@
+#!/usr/bin/python3
+import sqlite3
+from sqlite3 import Error
+
+def create_connection(db_file):
+    conn = None
+    try:
+        conn = sqlite3.connect(db_file)
+        return conn
+    except Error as e:
+        print(e)
+
+    return conn
+
+
+def execute_query(conn, query):
+    try:
+        c = conn.cursor()
+        c.execute(query)
+    except Error as e:
+        print(e)
+
+def main():
+    database = "ichimoku-notifier.db"
+
+    sqlCreateUsuariosTable = """ CREATE TABLE IF NOT EXISTS usuarios (
+                                        id integer PRIMARY KEY,
+                                        disc_id char(200) NOT NULL UNIQUE,
+                                        risk int,
+                                        value int,
+                                        close_umbrall tinyint NOT NULL
+                                        auto_operate boolean,
+                                    ); """
+
+    sqlCreateTradesTable = """CREATE TABLE IF NOT EXISTS trades (
+                                        id integer PRIMARY KEY,
+                                        opentime timestamp NOT NULL UNIQUE,
+                                        closetime timestamp UNIQUE,
+                                        stoploss int NOT NULL,
+                                        takeprofit int NOT NULL,
+                                        symbol char(10) NOT NULL,
+                                        usuarios char(256)
+                                );"""
+    sqlCreateBotConfigTable = """CREATE TABLE IF NOT EXISTS bot_config (
+                                    interval char(4) NOT NULL,
+                                    symbols char(200) NOT NULL                                
+                                );"""        
+
+    sqlInsertDefaultConfig = """INSERT INTO bot_config VALUES('1h','BTCUSDT,ETHUSDT,LINKUSDT,CAKEUSDT,LUNAUSDT,SOLUSDT')"""
+        
+    # create a database connection
+    conn = create_connection(database)
+
+    # create tables
+    if conn is not None:
+        execute_query(conn, sqlCreateBotConfigTable)
+        execute_query(conn, sqlCreateUsuariosTable)
+        execute_query(conn, sqlCreateTradesTable)        
+        execute_query(conn, sqlInsertDefaultConfig)                
+    else:
+        print("Error! cannot create the database connection.")
+main()
