@@ -5,6 +5,8 @@ from ta.utils import dropna
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib.patches import Rectangle
+import sqlite3
+from sqlite3 import Error
 
 mpl.style.use('seaborn')
 
@@ -74,23 +76,61 @@ limit='100'
 
 firstcandles = 100
 
-# def pene():
-for i in range(len(symbols) - 1):
-    coin = i
+
+
+"""
+Trade table:
+
+
+
+opentime, closetime, stoploss, takeprofit, symbol, usuarios
+
+
+usuarios:
+
+id, disc_id, risk, value, trust_bot, 
+
+
+
+bot_config:
+interval, symbols,  
+
+
+
+
+
+
+
+
+"""
+
+
+
+# def thread_analyze():
+#     for i in range(len(symbols)):
+#         coin = i
+#         moneda actual trade? = analyze()
+#         -1 short, no_trade, long +1
+
+
+
+
+
+def analize(make_request=True):
     print(f'checking {symbols[coin]}')
-    
-    rawCandles=json.loads(requests.get(f'https://api1.binance.com/api/v3/klines?symbol={symbols[coin]}&interval={interval}&limit={limit}').content.decode())
-    ts = [candle[0] for candle in rawCandles][:firstcandles]
-    op = [candle[1] for candle in rawCandles][:firstcandles]
-    high = [candle[2] for candle in rawCandles][:firstcandles]
-    low = [candle[3] for candle in rawCandles][:firstcandles]
-    close = [candle[4] for candle in rawCandles][:firstcandles]
-    vol = [candle[5] for candle in rawCandles][:firstcandles]
+    if(make_request): 
+        rawCandles=json.loads(requests.get(f'https://api1.binance.com/api/v3/klines?symbol={symbols[coin]}&interval={interval}&limit={limit}').content.decode())
+        ts = [candle[0] for candle in rawCandles][:firstcandles]
+        op = [candle[1] for candle in rawCandles][:firstcandles]
+        high = [candle[2] for candle in rawCandles][:firstcandles]
+        low = [candle[3] for candle in rawCandles][:firstcandles]
+        close = [candle[4] for candle in rawCandles][:firstcandles]
+        vol = [candle[5] for candle in rawCandles][:firstcandles]
 
-    formatedCandles = {'timestamp': ts, 'open': op, 'high': high, 'low': low, 'close': close, 'volume': vol}
+        formatedCandles = {'timestamp': ts, 'open': op, 'high': high, 'low': low, 'close': close, 'volume': vol}
 
-    df = pandas.DataFrame(formatedCandles)
-    df.to_csv('request.csv', encoding='utf-8')
+        df = pandas.DataFrame(formatedCandles)
+        df.to_csv('request.csv', encoding='utf-8')
 
     df = pandas.read_csv('request.csv', sep=',')
     df = dropna(df)
@@ -104,7 +144,26 @@ for i in range(len(symbols) - 1):
     df['ichimoku_lagging_span'] = df['close']
 
     df.to_csv('ichimoku.csv', encoding='utf-8')
-    
+
+
+    # get from sql trades
+    # fijarse, append "symbol, id, " 
+    # if(hay_trades):
+    #     #fijate que no se reviertan
+    # else:
+    #     pass
+        #todo lo de antes
+    #hay trade pero no se cumple    green = esta todo piola master
+        #si estas en short tenes que ver que el laggin span no sea mayor al open de la vela.
+        #si estas en long tenes que ver que el laggin span no sea menor al open de la vela.  
+
+    #1 2 4
+       
+    #laggin span TOCA precio        warning 1 vela mismo valor?   <-
+    #laggin span CRUZA el precio     CLOSE  antes era mayor o menor y ahora es lo contrario
+    #baseline y conversionline se dan vuelta warning <-
+
+
     fig, ax = plt.subplots()
  
     #widths of candlestick
@@ -149,19 +208,9 @@ for i in range(len(symbols) - 1):
     if(r[0] and r[1] == 4): 
         stoploss = df.ichimoku_b.iloc[-26]
         takeprofit = df.close.iloc[-1] + ((df.close.iloc[-1] - df.ichimoku_b.iloc[-26]) * 2)
-        # print(f'''
-        # LONG IN {symbols[coin]}
-        # SL: {stoploss}
-        # TP: {takeprofit}
-        # ''')
     if(r[0] and r[1] == -4):
         stoploss = df.ichimoku_a.iloc[-26]
         takeprofit = df.close.iloc[-1] - ((df.ichimoku_a.iloc[-26] - df.close.iloc[-1]) * 2)
-        # print(f'''
-        # SHORT IN {symbols[coin]}
-        # SL: {stoploss}
-        # TP: {takeprofit}
-        # ''')
 
     if(stoploss and takeprofit):
         ax.add_patch(Rectangle((int(limit)-30, df.close.iloc[-1]), 10,takeprofit - df.close.iloc[-1],
@@ -175,6 +224,7 @@ for i in range(len(symbols) - 1):
                  alpha=0.75,
                  fill=True,
                  lw=5))
+    
     
     plt.legend()
     plt.savefig(f'Ichimoku-{symbols[coin]}.png')
