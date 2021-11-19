@@ -1,0 +1,55 @@
+#!/usr/bin/python3
+import sqlite3
+from sqlite3 import Error
+
+class Database:
+    def __init__(self, db):
+        #Error handling
+        if db is None: raise('Must indicate a db file')
+
+        #Defaults
+        self.conn = None
+
+        #Connection
+        try:
+            self.conn = sqlite3.connect(db)
+        except Error as e:
+            raise(e)
+
+    def execute_query(self, query):
+        try:
+            c = self.conn.cursor().execute(query)
+        except Error as e:
+            print(e)
+
+    def create_database(self):
+        sqlCreateUsuariosTable = """ CREATE TABLE IF NOT EXISTS usuarios (
+                                            id integer PRIMARY KEY,
+                                            disc_id char(200) NOT NULL UNIQUE,
+                                            risk int,
+                                            value int,
+                                            close_umbrall tinyint NOT NULL
+                                            auto_operate boolean,
+                                        ); """
+
+        sqlCreateTradesTable = """CREATE TABLE IF NOT EXISTS trades (
+                                            id integer PRIMARY KEY,
+                                            opentime timestamp NOT NULL UNIQUE,
+                                            closetime timestamp UNIQUE,
+                                            stoploss int NOT NULL,
+                                            takeprofit int NOT NULL,
+                                            symbol char(10) NOT NULL,
+                                            usuarios char(256)
+                                    );"""
+        sqlCreateBotConfigTable = """CREATE TABLE IF NOT EXISTS bot_config (
+                                        interval char(4) NOT NULL,
+                                        symbols char(200) NOT NULL                                
+                                    );"""        
+
+        sqlInsertDefaultConfig = """INSERT INTO bot_config VALUES('1h','BTCUSDT,ETHUSDT,LINKUSDT,CAKEUSDT,LUNAUSDT,SOLUSDT')"""
+            
+        # create tables
+        self.execute_query(self.conn, sqlCreateBotConfigTable)
+        self.execute_query(self.conn, sqlCreateUsuariosTable)
+        self.execute_query(self.conn, sqlCreateTradesTable)        
+        self.execute_query(self.conn, sqlInsertDefaultConfig)                
