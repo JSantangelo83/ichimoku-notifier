@@ -10,65 +10,6 @@ from sqlite3 import Error
 
 mpl.style.use('seaborn')
 
-#Function definitions
-def compareLast(serieA, serieB, margin=1, shift=0, shiftA=0, serieC=''):
-    if (serieA.iloc[shiftA if shiftA else -1] > serieB.iloc[shift if shift else -1]) & ((serieA.iloc[shiftA if shiftA else -1] > serieC.iloc[shift if shift else -1]) if type(serieC) != str else True): return 1
-    if (serieA.iloc[shiftA if shiftA else -1] < serieB.iloc[shift if shift else -1]) & ((serieA.iloc[shiftA if shiftA else -1] < serieC.iloc[shift if shift else -1]) if type(serieC)!=str else True) : return -1
-    return 0
-
-def wrapper(df, margin=1):
-	conditions = 0
-
-	#Conversion and baseline
-	conditions += compareLast(df.ichimoku_conversion_line, df.ichimoku_base_line)
-	print('conversion and baseline: ',end='')
-	print(compareLast(df.ichimoku_conversion_line, df.ichimoku_base_line))
-
-	#Cloud
-	conditions += compareLast(df.ichimoku_a, df.ichimoku_b)
-	print('ichimoku cloud: ',end='')
-	print(compareLast(df.ichimoku_a, df.ichimoku_b))
-
-	#Price
-	conditions += compareLast(df.close, df.ichimoku_a, serieC=df.ichimoku_b, shift=-26)
-	print('price and ichimoku cloud: ',end='')
-	print(compareLast(df.close, df.ichimoku_a, serieC=df.ichimoku_b, shift=-26))
-
-	#Lagging Span
-	conditions += compareLast(df.ichimoku_lagging_span, df.ichimoku_a, serieC=df.ichimoku_b, shift=-26*2)
-	print('lagging span and ichimoku cloud: ',end='')
-	print(compareLast(df.ichimoku_lagging_span, df.ichimoku_a, serieC=df.ichimoku_b, shift=-26*2))
-	
-	conditions2 = 0
-
-	#Conversion and baseline
-	conditions2 += compareLast(df.ichimoku_conversion_line, df.ichimoku_base_line, shiftA=-margin)
-	print('conversion and baseline 2: ',end='')
-	print(compareLast(df.ichimoku_conversion_line, df.ichimoku_base_line, shiftA=-margin))
-
-    #Cloud
-	conditions2 += compareLast(df.ichimoku_a, df.ichimoku_b, shiftA=-margin)
-	print('price and ichimoku cloud 2: ',end='')
-	print(compareLast(df.ichimoku_a, df.ichimoku_b, shiftA=-margin))
-
-	#Price
-	conditions2 += compareLast(df.close, df.ichimoku_a, serieC=df.ichimoku_b, shift=-26-margin, shiftA=-margin)
-	print('price and ichimoku cloud 2: ',end='')
-	print(compareLast(df.close, df.ichimoku_a, serieC=df.ichimoku_b, shift=-26-margin, shiftA=-margin))
-
-	#Lagging Span
-	conditions2 += compareLast(df.ichimoku_lagging_span, df.ichimoku_a, serieC=df.ichimoku_b, shift=-(26*2)-margin, shiftA=-margin)
-	print('lagging span and ichimoku cloud 2: ',end='')
-	print(compareLast(df.ichimoku_lagging_span, df.ichimoku_a, serieC=df.ichimoku_b, shift=-(26*2)-margin, shiftA=-margin))	
-	print(abs(conditions))
-	print(conditions2)
-	print(conditions2 != conditions)
-	print(abs(conditions)== 4 and conditions2 != conditions)
-
-	if(abs(conditions)== 4 and conditions2 != conditions ):
-		return (True, conditions)
-	return (False, conditions)
-
 interval='1h'
 symbols = ['BTCUSDT','ETHUSDT','LINKUSDT','CAKEUSDT','LUNAUSDT','SOLUSDT']
 coin = 0
@@ -76,44 +17,7 @@ limit='100'
 
 firstcandles = 100
 
-
-
-"""
-Trade table:
-
-
-
-opentime, closetime, stoploss, takeprofit, symbol, usuarios
-
-
-usuarios:
-
-id, disc_id, risk, value, trust_bot, 
-
-
-
-bot_config:
-interval, symbols,  
-
-
-
-
-
-
-
-
-"""
-
-
-
-# def thread_analyze():
-#     for i in range(len(symbols)):
-#         coin = i
-#         moneda actual trade? = analyze()
-#         -1 short, no_trade, long +1
-
-
-
+def getData(interval,symbol,limit,firstcandles=0)
 
 
 def analize(make_request=True):
