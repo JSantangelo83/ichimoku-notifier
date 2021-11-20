@@ -1,4 +1,4 @@
 ta
 discord.py-message-components
-mathplotlib
-sqlite3
+matplotlib
+pysqlite3
