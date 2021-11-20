@@ -1,136 +1,79 @@
 #!/usr/bin/python3
+#Imports
 import ta,requests,json,pandas
-from ta.trend import IchimokuIndicator
-from ta.utils import dropna
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib.patches import Rectangle
-import sqlite3
-from sqlite3 import Error
+#Test imports
+from strategies.ichimoku import ichimokuCalculate, ichimokuAnalyze, ichimokuPlot
 
-mpl.style.use('seaborn')
+def getData(interval,symbol,limit,firstcandles=0):
+    rawCandles=json.loads(requests.get(f'https://api1.binance.com/api/v3/klines?symbol={symbol}&interval={interval}&limit={limit}').content.decode())
 
-interval='1h'
-symbols = ['BTCUSDT','ETHUSDT','LINKUSDT','CAKEUSDT','LUNAUSDT','SOLUSDT']
-coin = 0
-limit='100'
+    firstcandles = firstcandles if firstcandles else len(rawCandles[0])
+    
+    ts = [candle[0] for candle in rawCandles][:firstcandles]
+    op = [candle[1] for candle in rawCandles][:firstcandles]
+    high = [candle[2] for candle in rawCandles][:firstcandles]
+    low = [candle[3] for candle in rawCandles][:firstcandles]
+    close = [candle[4] for candle in rawCandles][:firstcandles]
+    vol = [candle[5] for candle in rawCandles][:firstcandles]
 
-firstcandles = 100
+    formatedCandles = {'timestamp': ts, 'open': op, 'high': high, 'low': low, 'close': close, 'volume': vol}
 
-def getData(interval,symbol,limit,firstcandles=0)
+    reqdf = pandas.DataFrame(formatedCandles)
+    
+    reqdf.to_csv('../tmp/request.csv', encoding='utf-8')
+    reqdf = pandas.read_csv('../tmp/request.csv', sep=',')
 
-
-def analize(make_request=True):
-    print(f'checking {symbols[coin]}')
-    if(make_request): 
-        rawCandles=json.loads(requests.get(f'https://api1.binance.com/api/v3/klines?symbol={symbols[coin]}&interval={interval}&limit={limit}').content.decode())
-        ts = [candle[0] for candle in rawCandles][:firstcandles]
-        op = [candle[1] for candle in rawCandles][:firstcandles]
-        high = [candle[2] for candle in rawCandles][:firstcandles]
-        low = [candle[3] for candle in rawCandles][:firstcandles]
-        close = [candle[4] for candle in rawCandles][:firstcandles]
-        vol = [candle[5] for candle in rawCandles][:firstcandles]
-
-        formatedCandles = {'timestamp': ts, 'open': op, 'high': high, 'low': low, 'close': close, 'volume': vol}
-
-        df = pandas.DataFrame(formatedCandles)
-        df.to_csv('request.csv', encoding='utf-8')
-
-    df = pandas.read_csv('request.csv', sep=',')
-    df = dropna(df)
-
-    ichimoku = IchimokuIndicator(high=df['high'] ,low=df['low'])
-
-    df['ichimoku_a'] = ichimoku.ichimoku_a()
-    df['ichimoku_b'] = ichimoku.ichimoku_b()
-    df['ichimoku_conversion_line'] = ichimoku.ichimoku_conversion_line()
-    df['ichimoku_base_line'] = ichimoku.ichimoku_base_line()
-    df['ichimoku_lagging_span'] = df['close']
-
-    df.to_csv('ichimoku.csv', encoding='utf-8')
-
-
-    # get from sql trades
-    # fijarse, append "symbol, id, " 
-    # if(hay_trades):
-    #     #fijate que no se reviertan
-    # else:
-    #     pass
-        #todo lo de antes
-    #hay trade pero no se cumple    green = esta todo piola master
-        #si estas en short tenes que ver que el laggin span no sea mayor al open de la vela.
-        #si estas en long tenes que ver que el laggin span no sea menor al open de la vela.  
-
-    #1 2 4
-       
-    #laggin span TOCA precio        warning 1 vela mismo valor?   <-
-    #laggin span CRUZA el precio     CLOSE  antes era mayor o menor y ahora es lo contrario
-    #baseline y conversionline se dan vuelta warning <-
-
+    return reqdf
+    
+def plotDefaults(reqdf, title):
+    mpl.style.use('seaborn')
 
     fig, ax = plt.subplots()
- 
+
+    plt.title(title)
+    
     #widths of candlestick
     width = .4
     width2 = .05
     #up and down prices
 
-    up = df.loc[df.close > df.open]#.shift(periods=-26)
-    down =  df.loc[df.close < df.open]#.shift(periods=-26)
+    up = reqdf.loc[reqdf.close > reqdf.open]
+    down =  reqdf.loc[reqdf.close < reqdf.open]
     #colors in candlestick
     col1 = 'green'
     col2 = 'red'
 
     #plot up prices
-    plt.bar(up.index- 26,up.close-up.open,width,bottom=up.open,color=col1)
-    plt.bar(up.index- 26,up.high-up.close,width2,bottom=up.close,color=col1)
-    plt.bar(up.index- 26,up.low-up.open,width2,bottom=up.open,color=col1)
+    ax.bar(up.index- 26,up.close-up.open,width,bottom=up.open,color=col1)
+    ax.bar(up.index- 26,up.high-up.close,width2,bottom=up.close,color=col1)
+    ax.bar(up.index- 26,up.low-up.open,width2,bottom=up.open,color=col1)
     
     #plot down prices
-    plt.bar(down.index- 26,down.close-down.open,width,bottom=down.open,color=col2)
-    plt.bar(down.index- 26,down.high-down.open,width2,bottom=down.open,color=col2)
-    plt.bar(down.index- 26,down.low-down.close,width2,bottom=down.close,color=col2)
+    ax.bar(down.index- 26,down.close-down.open,width,bottom=down.open,color=col2)
+    ax.bar(down.index- 26,down.high-down.open,width2,bottom=down.open,color=col2)
+    ax.bar(down.index- 26,down.low-down.close,width2,bottom=down.close,color=col2)
 
-    
-    ax.plot(df.ichimoku_a, label='Ichimoku A', color='#53B96A', linewidth=0)
-    ax.plot(df.ichimoku_a, label='Ichimoku A', color='#53B96A', linewidth=0)
-    # ax.plot(df.close.shift(periods=-26), label='Price', color='#484848', linewidth=1)
+    return (plt,fig,ax)
 
-    ax.fill_between(df.ichimoku_a.index, df.ichimoku_a, df.ichimoku_b, where=df.ichimoku_a >= df.ichimoku_b, facecolor='#53B96A', alpha=0.5, interpolate=True)
-    ax.fill_between(df.ichimoku_b.index, df.ichimoku_a, df.ichimoku_b, where=df.ichimoku_a <= df.ichimoku_b, facecolor='#E9838D', alpha=0.5, interpolate=True)
+def main():
+    if __name__ == '__main__':
+        #Params
+        interval='1h'
+        symbol = 'BTCUSDT'
+        limit='100'
+        firstcandles = 100
+        
+        reqdf = getData(interval, symbol, limit, firstcandles)
 
-    ax.plot(df.ichimoku_base_line.shift(periods=-26), label='Base Line', color='#FFC107', linewidth=1)
-    ax.plot(df.ichimoku_conversion_line.shift(periods=-26), label='Conversion Line', color='#007BFF', linewidth=1)
-    ax.plot(df.close.shift(periods=-26*2), label='Lagging Span', color='#7F00FF', linewidth=1)
+        plt, fig, ax = plotDefaults(reqdf, f'{symbol} {interval}')
 
-    plt.title(f'Ichimoku Cloud {symbols[coin]} {interval}')
-    r = wrapper(df)
-
-    #Checking
-    stoploss = 0
-    takeprofit = 0
-    if(r[0] and r[1] == 4): 
-        stoploss = df.ichimoku_b.iloc[-26]
-        takeprofit = df.close.iloc[-1] + ((df.close.iloc[-1] - df.ichimoku_b.iloc[-26]) * 2)
-    if(r[0] and r[1] == -4):
-        stoploss = df.ichimoku_a.iloc[-26]
-        takeprofit = df.close.iloc[-1] - ((df.ichimoku_a.iloc[-26] - df.close.iloc[-1]) * 2)
-
-    if(stoploss and takeprofit):
-        ax.add_patch(Rectangle((int(limit)-30, df.close.iloc[-1]), 10,takeprofit - df.close.iloc[-1],
-             facecolor = '#B8DEAB',
-             fill=True,
-             alpha=0.75,
-             lw=5))
-
-        ax.add_patch(Rectangle((int(limit)-30, stoploss), 10,df.close.iloc[-1] - stoploss,
-                 facecolor = '#F5A5A5',
-                 alpha=0.75,
-                 fill=True,
-                 lw=5))
-    
-    
-    plt.legend()
-    plt.savefig(f'Ichimoku-{symbols[coin]}.png')
-    plt.show()
-# pene()
+        ichimokudf = ichimokuCalculate(reqdf)
+        ichimokuPlot(ichimokudf, plt, fig, ax, ichimokuAnalyze(ichimokudf, 1) )
+        
+        #Show the graphic
+        plt.legend()
+        plt.show()
+main()

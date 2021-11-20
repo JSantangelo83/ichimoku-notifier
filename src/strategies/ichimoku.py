@@ -2,11 +2,7 @@
 import ta,requests,json,pandas
 from ta.trend import IchimokuIndicator
 from ta.utils import dropna
-import matplotlib.pyplot as plt
-import matplotlib as mpl
 from matplotlib.patches import Rectangle
-import sqlite3
-from sqlite3 import Error
 
 #Auxiliar function definitions
 def compareLast(serieA, serieB, margin=1, shift=0, shiftA=0, serieC=''):
@@ -17,8 +13,9 @@ def compareLast(serieA, serieB, margin=1, shift=0, shiftA=0, serieC=''):
 #Ichimoku Functions
 def ichimokuCalculate(reqdf):
     reqdf = dropna(reqdf)
-
-    ichimokudf = IchimokuIndicator(high=reqdf['high'] ,low=reqdf['low'])
+    
+    ichimokudf = pandas.DataFrame()
+    ichimoku = IchimokuIndicator(high=reqdf['high'] ,low=reqdf['low'])
 
     ichimokudf['ichimoku_a'] = ichimoku.ichimoku_a()
     ichimokudf['ichimoku_b'] = ichimoku.ichimoku_b()
@@ -27,43 +24,43 @@ def ichimokuCalculate(reqdf):
     ichimokudf['ichimoku_lagging_span'] = reqdf['close']
     ichimokudf['close'] = reqdf['close']
     
-    # return reqdf
-    
-    ichimokudf.to_csv('tmp/ichimoku.csv', encoding='utf-8')
+    ichimokudf.to_csv('../tmp/ichimoku.csv', encoding='utf-8')
+    ichimokudf = pandas.read_csv('../tmp/ichimoku.csv', sep=',')
 
-def ichimokuAnalyze(ichimokudf):
+    return ichimokudf
+    
+def ichimokuAnalyze(ichimokudf,margin):
     #Analyzing DataFrame
 
     #Declaration
-	conditions = 0
-	#Conversion and baseline
-	conditions += compareLast(ichimokudf.ichimoku_conversion_line, ichimokudf.ichimoku_base_line)
-	#Cloud
-	conditions += compareLast(ichimokudf.ichimoku_a, ichimokudf.ichimoku_b)
-	#Price
-	conditions += compareLast(ichimokudf.close, ichimokudf.ichimoku_a, serieC=ichimokudf.ichimoku_b, shift=-26)
-	#Lagging Span
-	conditions += compareLast(ichimokudf.ichimoku_lagging_span, ichimokudf.ichimoku_a, serieC=ichimokudf.ichimoku_b, shift=-26*2)
+    conditions = 0
+    #Conversion and baseline
+    conditions += compareLast(ichimokudf.ichimoku_conversion_line, ichimokudf.ichimoku_base_line)
+    #Cloud
+    conditions += compareLast(ichimokudf.ichimoku_a, ichimokudf.ichimoku_b)
+    #Price
+    conditions += compareLast(ichimokudf.close, ichimokudf.ichimoku_a, serieC=ichimokudf.ichimoku_b, shift=-26)
+    #Lagging Span
+    conditions += compareLast(ichimokudf.ichimoku_lagging_span, ichimokudf.ichimoku_a, serieC=ichimokudf.ichimoku_b, shift=-26*2)
 
-	#Decalaration 2
-	conditions2 = 0
-	#Conversion and baseline 2
-	conditions2 += compareLast(ichimokudf.ichimoku_conversion_line, ichimokudf.ichimoku_base_line, shiftA=-margin)
+    #Decalaration 2
+    conditions2 = 0
+    #Conversion and baseline 2
+    conditions2 += compareLast(ichimokudf.ichimoku_conversion_line, ichimokudf.ichimoku_base_line, shiftA=-margin)
     #Cloud 2
-	conditions2 += compareLast(ichimokudf.ichimoku_a, ichimokudf.ichimoku_b, shiftA=-margin)
-	#Price 2
-	conditions2 += compareLast(ichimokudf.close, ichimokudf.ichimoku_a, serieC=ichimokudf.ichimoku_b, shift=-26-margin, shiftA=-margin)
-	#Lagging Span 2
-	conditions2 += compareLast(ichimokudf.ichimoku_lagging_span, ichimokudf.ichimoku_a, serieC=ichimokudf.ichimoku_b, shift=-(26*2)-margin, shiftA=-margin)
+    conditions2 += compareLast(ichimokudf.ichimoku_a, ichimokudf.ichimoku_b, shiftA=-margin)
+    #Price 2
+    conditions2 += compareLast(ichimokudf.close, ichimokudf.ichimoku_a, serieC=ichimokudf.ichimoku_b, shift=-26-margin, shiftA=-margin)
+    #Lagging Span 2
+    conditions2 += compareLast(ichimokudf.ichimoku_lagging_span, ichimokudf.ichimoku_a, serieC=ichimokudf.ichimoku_b, shift=-(26*2)-margin, shiftA=-margin)
 
     #Analyzing conditions
-	if(abs(conditions)== 4 and conditions2 != conditions ):
-		result = (True, conditions)
-	result = (False, conditions)
+    if(abs(conditions)== 4 and conditions2 != conditions ):
+        result = (True, conditions)
+    result = (False, conditions)
 
 
     #Calculating stoploss and takeprofit
-    
     sl = 0
     tp = 0
     direction = ''
@@ -77,30 +74,28 @@ def ichimokuAnalyze(ichimokudf):
         sl = ichimokudf.ichimoku_a.iloc[-26]
         tp = ichimokudf.close.iloc[-1] - ((ichimokudf.ichimoku_a.iloc[-26] - ichimokudf.close.iloc[-1]) * 2)
         direction = 'Short'
-        
     #Returns
     if(sl and tp):
-        return (ichimokuichimokudf, { 'direction': direction, 'stoploss': sl, 'takeprofit': tp })
-    elif:
-        return (ichimokuichimokudf,None)
+        return { 'direction': direction, 'stoploss': sl, 'takeprofit': tp }
+    else:
+        return None
                          
-def ichimokuPlot(ichimokudf, trade=None):
-    mpl.style.use('seaborn')
-    fig, ax = plt.subplots()
+def ichimokuPlot(ichimokudf, plt, fig, ax, trade=None):
     
     if(trade != None):
-         ax.add_patch(Rectangle((int(limit)-30, ichimokudf.close.iloc[-1]), 10,trade.takeprofit - ichimokudf.close.iloc[-1],
+        #TODO: CHANGE 100 to limit variable
+        ax.add_patch(Rectangle((int(100)-30, ichimokudf.close.iloc[-1]), 10,trade.takeprofit - ichimokudf.close.iloc[-1],
              facecolor = '#B8DEAB',
              fill=True,
              alpha=0.75,
              lw=5))
-
-         ax.add_patch(Rectangle((int(limit)-30, trade.stoploss), 10,ichimokudf.close.iloc[-1] - trade.stoploss,
+        #TODO: CHANGE 100 to limit variable
+        ax.add_patch(Rectangle((int(100)-30, trade.stoploss), 10,ichimokudf.close.iloc[-1] - trade.stoploss,
              facecolor = '#F5A5A5',
              alpha=0.75,
              fill=True,
              lw=5))
-        ax.plot(df.ichimoku_a, label='Ichimoku A', color='#53B96A', linewidth=0)
+        ax.plot(ichimokudf.ichimoku_a, label='Ichimoku A', color='#53B96A', linewidth=0)
             
     ax.plot(ichimokudf.ichimoku_a, label='Ichimoku A', color='#53B96A', linewidth=0)
     ax.fill_between(ichimokudf.ichimoku_a.index, ichimokudf.ichimoku_a, ichimokudf.ichimoku_b, where=ichimokudf.ichimoku_a >= ichimokudf.ichimoku_b, facecolor='#53B96A', alpha=0.5, interpolate=True)
@@ -109,9 +104,5 @@ def ichimokuPlot(ichimokudf, trade=None):
     ax.plot(ichimokudf.ichimoku_conversion_line.shift(periods=-26), label='Conversion Line', color='#007BFF', linewidth=1)
     ax.plot(ichimokudf.close.shift(periods=-26*2), label='Lagging Span', color='#7F00FF', linewidth=1)
 
-    plt.title(f'Ichimoku Cloud {symbols[coin]} {interval}')
-
-    #Save and shows
-    plt.legend()
-    plt.savefig(f'Ichimoku-{symbols[coin]}.png')
-    plt.show()
+    #TODO: Change BTCUSDT to symbol variable
+    plt.savefig(f'../tmp/Ichimoku-BTCUSDT.png')
