@@ -1,14 +1,28 @@
 #!/usr/bin/python3
-import typing
 import discord
 from discord.ext import commands
 from discord import ActionRow, Button, ButtonStyle
+from helperdb import HelperDB
+import time
+
+
 client = commands.Bot(command_prefix=commands.when_mentioned_or('$'), intents=discord.Intents.all(), case_insensitive=True)
+
 
 async def botimoku():
     await client.wait_until_ready()
-    #ctx = client.get_channel(910751775697563669) # replace with channel ID that you want to send to
-    #await send_trade(ctx, "BTCUSDT", "../tmp/a.png", "52.0000", "56.000", "SHORT", 0, "512")
+
+    interval = HelperDB.instance.fromIntervalToSeconds(HelperDB.instance.getInterval())    
+    print(f"INTERVAL = {interval}")
+    time_cero = time.time()
+    time_end = time_cero + interval
+    while True:
+        time_cero = time.time()
+        if(time_cero >= time_end):
+            print("pasaron 10 seg")
+            time_end = time_cero + interval
+    ctx = client.get_channel(HelperDB.instance.getChannel()) # replace with channel ID that you want to send to
+    await send_trade(ctx, "BTCUSDT", ".\\tmp\\a.png", "52.0000", "56.000", "SHORT", 0, "512")
     
 
 @client.event
@@ -16,8 +30,7 @@ async def on_guild_join(guild):
     ch = discord.utils.get(guild.channels, name="botimoku_time")
     if(not ch):
         ch = await guild.create_text_channel('botimoku_time')
-    print("hola")
-    print(ch.id)
+    HelperDB.instance.setChannel(ch)
 
 async def send_trade(ctx, symbol, image_path, takeprofit, stoploss, direccionalidad, status, trade_id):
     users = []

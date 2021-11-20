@@ -28,6 +28,10 @@ def getData(interval,symbol,limit,firstcandles=0):
 
     return reqdf
     
+
+
+
+
 def plotDefaults(reqdf, title):
     mpl.style.use('seaborn')
 

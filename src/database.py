@@ -16,25 +16,31 @@ class Database:
         except Error as e:
             raise(e)
 
-    def execute_query(self, query):
+    def execute_query(self, query, args=None):
         try:
-            c = self.conn.cursor().execute(query)
+            cursor = self.conn.cursor()
+            if(args is not None):
+                cursor.execute(query, args)
+            else:
+                cursor.execute(query)
+            self.conn.commit()
+            return cursor.fetchall()
         except Error as e:
             print(e)
 
-    def create_database(self):
+    def create_database(self, set_config):
         sqlCreateUsuariosTable = """ CREATE TABLE IF NOT EXISTS usuarios (
                                             id integer PRIMARY KEY,
                                             disc_id char(200) NOT NULL UNIQUE,
                                             risk int,
                                             value int,
-                                            close_umbrall tinyint NOT NULL
-                                            auto_operate boolean,
+                                            close_umbrall tinyint NOT NULL,
+                                            auto_operate boolean
                                         ); """
 
         sqlCreateTradesTable = """CREATE TABLE IF NOT EXISTS trades (
                                             id integer PRIMARY KEY,
-                                            opentime timestamp NOT NULL UNIQUE,
+                                            opentime timestamp NOT NULL,
                                             closetime timestamp UNIQUE,
                                             stoploss int NOT NULL,
                                             takeprofit int NOT NULL,
@@ -42,22 +48,24 @@ class Database:
                                             usuarios char(256)
                                     );"""
         sqlCreateBotConfigTable = """CREATE TABLE IF NOT EXISTS bot_config (
+                                        id integer PRIMARY KEY,
                                         interval char(4) NOT NULL,
                                         symbols char(200) NOT NULL,
-                                        channel char(30),
+                                        channel char(30)
                                     );"""        
         sqlCreateStrategiesTable = """CREATE TABLE IF NOT EXISTS strategies  (
                                         id integer PRIMARY KEY,
                                         nombre char(20) NOT NULL UNIQUE,
-                                        margin integer NOT NULL,
+                                        margin integer NOT NULL
                                     );"""        
-
-        sqlInsertDefaultConfig = """INSERT INTO bot_config VALUES('1h','BTCUSDT,ETHUSDT,LINKUSDT,CAKEUSDT,LUNAUSDT,SOLUSDT')"""
+        if(set_config):
+            sqlInsertDefaultConfig = """INSERT INTO bot_config VALUES(1, '1h','BTCUSDT,ETHUSDT,LINKUSDT,CAKEUSDT,LUNAUSDT,SOLUSDT', NULL)"""
         
             
         # create tables
-        self.execute_query(self.conn, sqlCreateBotConfigTable)
-        self.execute_query(self.conn, sqlCreateUsuariosTable)
-        self.execute_query(self.conn, sqlCreateTradesTable)        
-        self.execute_query(self.conn, sqlCreateStrategiesTable)
-        self.execute_query(self.conn, sqlInsertDefaultConfig)                
+        self.execute_query(sqlCreateBotConfigTable)
+        self.execute_query(sqlCreateUsuariosTable)
+        self.execute_query(sqlCreateTradesTable)        
+        self.execute_query(sqlCreateStrategiesTable)
+        if(set_config):
+            self.execute_query(sqlInsertDefaultConfig)                
