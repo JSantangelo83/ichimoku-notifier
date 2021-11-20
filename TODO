@@ -1,0 +1,14 @@
+botimoku:
+-handlear el channel desde sql 
+-comando para listar y seleccionar strategia
+-comando para ver mis founds 
+-integrar analyzer con el send_trade y la funcion trade
+
+sql:
+-agregar los datos a los usuarios para la api de binance
+-helpers para llamar desde discord 
+
+
+analyzer:
+
+

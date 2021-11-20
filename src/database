@@ -43,13 +43,21 @@ class Database:
                                     );"""
         sqlCreateBotConfigTable = """CREATE TABLE IF NOT EXISTS bot_config (
                                         interval char(4) NOT NULL,
-                                        symbols char(200) NOT NULL                                
+                                        symbols char(200) NOT NULL,
+                                        channel char(30),
+                                    );"""        
+        sqlCreateStrategiesTable = """CREATE TABLE IF NOT EXISTS strategies  (
+                                        id integer PRIMARY KEY,
+                                        nombre char(20) NOT NULL UNIQUE,
+                                        margin integer NOT NULL,
                                     );"""        
 
         sqlInsertDefaultConfig = """INSERT INTO bot_config VALUES('1h','BTCUSDT,ETHUSDT,LINKUSDT,CAKEUSDT,LUNAUSDT,SOLUSDT')"""
+        
             
         # create tables
         self.execute_query(self.conn, sqlCreateBotConfigTable)
         self.execute_query(self.conn, sqlCreateUsuariosTable)
         self.execute_query(self.conn, sqlCreateTradesTable)        
+        self.execute_query(self.conn, sqlCreateStrategiesTable)
         self.execute_query(self.conn, sqlInsertDefaultConfig)                

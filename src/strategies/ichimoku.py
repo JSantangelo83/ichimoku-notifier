@@ -84,13 +84,13 @@ def ichimokuPlot(ichimokudf, plt, fig, ax, trade=None):
     
     if(trade != None):
         #TODO: CHANGE 100 to limit variable
-        ax.add_patch(Rectangle((int(100)-30, ichimokudf.close.iloc[-1]), 10,trade.takeprofit - ichimokudf.close.iloc[-1],
+        ax.add_patch(Rectangle((len(ichimokudf.close)-30, ichimokudf.close.iloc[-1]), 10,trade.takeprofit - ichimokudf.close.iloc[-1],
              facecolor = '#B8DEAB',
              fill=True,
              alpha=0.75,
              lw=5))
         #TODO: CHANGE 100 to limit variable
-        ax.add_patch(Rectangle((int(100)-30, trade.stoploss), 10,ichimokudf.close.iloc[-1] - trade.stoploss,
+        ax.add_patch(Rectangle((len(ichimokudf.close)-30, trade.stoploss), 10,ichimokudf.close.iloc[-1] - trade.stoploss,
              facecolor = '#F5A5A5',
              alpha=0.75,
              fill=True,
