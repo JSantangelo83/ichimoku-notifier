@@ -11,4 +11,8 @@ sql:
 
 analyzer:
 
-
+tester:
+agregar carga secuencial de las velas
+agregar posibilidad de ver el desarrollo del trade
+agregar posibilidad de ver el siguiente trade
+agregar un resumen final con stats sobre como fue la estrategia

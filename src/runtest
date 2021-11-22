@@ -3,6 +3,8 @@
 import sys
 from analyzer import *
 
+
+#TODO: Sequencial charge of candles
 def main():
     if __name__ == '__main__':
         #Params
