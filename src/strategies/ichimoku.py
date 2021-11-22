@@ -5,9 +5,9 @@ from ta.utils import dropna
 from matplotlib.patches import Rectangle
 
 #Auxiliar function definitions
-def compareLast(serieA, serieB, margin=1, shift=0, shiftA=0, serieC=''):
-    if (serieA.iloc[shiftA if shiftA else -1] > serieB.iloc[shift if shift else -1]) & ((serieA.iloc[shiftA if shiftA else -1] > serieC.iloc[shift if shift else -1]) if type(serieC) != str else True): return 1
-    if (serieA.iloc[shiftA if shiftA else -1] < serieB.iloc[shift if shift else -1]) & ((serieA.iloc[shiftA if shiftA else -1] < serieC.iloc[shift if shift else -1]) if type(serieC)!=str else True) : return -1
+def compareLast(serieA, serieB, shiftBC=0, shiftA=0, serieC=''):
+    if (serieA.iloc[shiftA if shiftA else -1] > serieB.iloc[shiftBC if shiftBC else -1]) & ((serieA.iloc[shiftA if shiftA else -1] > serieC.iloc[shiftBC if shiftBC else -1]) if type(serieC) != str else True): return 1
+    if (serieA.iloc[shiftA if shiftA else -1] < serieB.iloc[shiftBC if shiftBC else -1]) & ((serieA.iloc[shiftA if shiftA else -1] < serieC.iloc[shiftBC if shiftBC else -1]) if type(serieC)!=str else True) : return -1
     return 0
 
 #Ichimoku Functions
@@ -23,74 +23,87 @@ def ichimokuCalculate(reqdf):
     ichimokudf['ichimoku_base_line'] = ichimoku.ichimoku_base_line()
     ichimokudf['ichimoku_lagging_span'] = reqdf['close']
     ichimokudf['close'] = reqdf['close']
+    ichimokudf['timestamp'] = reqdf['timestamp']
     
     ichimokudf.to_csv('../tmp/ichimoku.csv', encoding='utf-8')
     ichimokudf = pandas.read_csv('../tmp/ichimoku.csv', sep=',')
 
     return ichimokudf
     
-def ichimokuAnalyze(ichimokudf,margin):
+def ichimokuAnalyze(ichimokudf,margin,trade = None):
     #Analyzing DataFrame
 
-    #Declaration
-    conditions = 0
-    #Conversion and baseline
-    conditions += compareLast(ichimokudf.ichimoku_conversion_line, ichimokudf.ichimoku_base_line)
-    #Cloud
-    conditions += compareLast(ichimokudf.ichimoku_a, ichimokudf.ichimoku_b)
-    #Price
-    conditions += compareLast(ichimokudf.close, ichimokudf.ichimoku_a, serieC=ichimokudf.ichimoku_b, shift=-26)
-    #Lagging Span
-    conditions += compareLast(ichimokudf.ichimoku_lagging_span, ichimokudf.ichimoku_a, serieC=ichimokudf.ichimoku_b, shift=-26*2)
+    #If there is an open trade then check if it is reverting
+    if(trade):
+        conditions = 0
+        
+        #Looking for revertion on conversion and baseline
+        emastatus = compareLast(ichimokudf.ichimoku_conversion_line, ichimokudf.ichimoku_base_line)
+        if trade['direction'] == 'long' and emastatus != 1: conditions += 2               
+        if trade['direction'] == 'short' and emastatus != -1: conditions += 2
 
-    #Decalaration 2
-    conditions2 = 0
-    #Conversion and baseline 2
-    conditions2 += compareLast(ichimokudf.ichimoku_conversion_line, ichimokudf.ichimoku_base_line, shiftA=-margin)
-    #Cloud 2
-    conditions2 += compareLast(ichimokudf.ichimoku_a, ichimokudf.ichimoku_b, shiftA=-margin)
-    #Price 2
-    conditions2 += compareLast(ichimokudf.close, ichimokudf.ichimoku_a, serieC=ichimokudf.ichimoku_b, shift=-26-margin, shiftA=-margin)
-    #Lagging Span 2
-    conditions2 += compareLast(ichimokudf.ichimoku_lagging_span, ichimokudf.ichimoku_a, serieC=ichimokudf.ichimoku_b, shift=-(26*2)-margin, shiftA=-margin)
-
-    #Analyzing conditions
-    if(abs(conditions)== 4 and conditions2 != conditions ):
-        result = (True, conditions)
-    result = (False, conditions)
-
-
-    #Calculating stoploss and takeprofit
-    sl = 0
-    tp = 0
-    direction = ''
-    #Long    
-    if(result[0] and result[1] == 4): 
-        sl = ichimokudf.ichimoku_b.iloc[-26]
-        tp = ichimokudf.close.iloc[-1] + ((ichimokudf.close.iloc[-1] - ichimokudf.ichimoku_b.iloc[-26]) * 2)
-        direction = 'Long'
-    #Short
-    if(result[0] and result[1] == -4):
-        sl = ichimokudf.ichimoku_a.iloc[-26]
-        tp = ichimokudf.close.iloc[-1] - ((ichimokudf.ichimoku_a.iloc[-26] - ichimokudf.close.iloc[-1]) * 2)
-        direction = 'Short'
-    #Returns
-    if(sl and tp):
-        return { 'direction': direction, 'stoploss': sl, 'takeprofit': tp }
+        
+    #If there isn't any open trade then check for signals
     else:
-        return None
+        #Declaration
+        conditions = 0
+        #Conversion and baseline
+        conditions += compareLast(ichimokudf.ichimoku_conversion_line, ichimokudf.ichimoku_base_line)
+        #Cloud
+        conditions += compareLast(ichimokudf.ichimoku_a, ichimokudf.ichimoku_b)
+        #Price
+        conditions += compareLast(ichimokudf.close, ichimokudf.ichimoku_a, serieC=ichimokudf.ichimoku_b, shiftBC=-26)
+        #Lagging Span
+        conditions += compareLast(ichimokudf.ichimoku_lagging_span, ichimokudf.ichimoku_a, serieC=ichimokudf.ichimoku_b, shiftBC=-26*2)
+
+        #Decalaration 2
+        conditions2 = 0
+        #Conversion and baseline 2
+        conditions2 += compareLast(ichimokudf.ichimoku_conversion_line, ichimokudf.ichimoku_base_line, shiftA=-margin, shiftBC=-margin)
+        #Cloud 2
+        conditions2 += compareLast(ichimokudf.ichimoku_a, ichimokudf.ichimoku_b, shiftA=-margin, shiftBC=-margin)
+        #Price 2
+        conditions2 += compareLast(ichimokudf.close, ichimokudf.ichimoku_a, serieC=ichimokudf.ichimoku_b, shiftBC=-26-margin, shiftA=-margin)
+        #Lagging Span 2
+        conditions2 += compareLast(ichimokudf.ichimoku_lagging_span, ichimokudf.ichimoku_a, serieC=ichimokudf.ichimoku_b, shiftBC=-(26*2)-margin, shiftA=-margin)
+
+        #Analyzing conditions
+        if (abs(conditions)== 4) and (conditions2 != conditions): 
+            result = (True, conditions)
+        else: 
+            result = (False, conditions)
+        
+        #Calculating stoploss and takeprofit
+        sl = 0
+        tp = 0
+        direction = ''
+        #Long    
+        if(result[0] and result[1] == 4): 
+            sl = min(ichimokudf.ichimoku_a.iloc[-26],ichimokudf.ichimoku_b.iloc[-26]) - (ichimokudf.close.iloc[-1] * 0.01)
+            tp = ichimokudf.close.iloc[-1] + ((ichimokudf.close.iloc[-1] - ichimokudf.ichimoku_b.iloc[-26]) * 2)
+            direction = 'Long'
+        #Short
+        if(result[0] and result[1] == -4):
+            sl = max(ichimokudf.ichimoku_a.iloc[-26],ichimokudf.ichimoku_b.iloc[-26]) + (ichimokudf.close.iloc[-1] * 0.01)
+            tp = ichimokudf.close.iloc[-1] - ((ichimokudf.ichimoku_a.iloc[-26] - ichimokudf.close.iloc[-1]) * 2)
+            direction = 'Short'
+        #Returns
+        if(sl and tp):
+            return { 'direction': direction, 'stoploss': sl, 'takeprofit': tp, 'opentime':ichimokudf.timestamp.iloc[-1] }
+        else:
+            return None
                          
 def ichimokuPlot(ichimokudf, plt, fig, ax, trade=None):
     
     if(trade != None):
         #TODO: CHANGE 100 to limit variable
-        ax.add_patch(Rectangle((len(ichimokudf.close)-30, ichimokudf.close.iloc[-1]), 10,trade.takeprofit - ichimokudf.close.iloc[-1],
+        ax.add_patch(Rectangle((len(ichimokudf.close)-30, ichimokudf.close.iloc[-1]), 10,trade['takeprofit'] - ichimokudf.close.iloc[-1],
              facecolor = '#B8DEAB',
              fill=True,
              alpha=0.75,
              lw=5))
         #TODO: CHANGE 100 to limit variable
-        ax.add_patch(Rectangle((len(ichimokudf.close)-30, trade.stoploss), 10,ichimokudf.close.iloc[-1] - trade.stoploss,
+        ax.add_patch(Rectangle((len(ichimokudf.close)-30, trade['stoploss']), 10,ichimokudf.close.iloc[-1] - trade['stoploss'],
              facecolor = '#F5A5A5',
              alpha=0.75,
              fill=True,

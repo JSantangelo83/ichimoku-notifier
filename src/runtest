@@ -1,0 +1,58 @@
+#!/usr/bin/python3
+#Imports
+import sys
+from analyzer import *
+
+def main():
+    if __name__ == '__main__':
+        #Params
+        interval = sys.argv[1]
+        symbol = sys.argv[2]        
+        strategyname = sys.argv[3]
+        lastcandle = json.loads(requests.get(f'https://api1.binance.com/api/v3/klines?symbol={symbol}&interval={interval}&limit=1').content.decode())[0]    
+        duration = lastcandle[6] - lastcandle[0]
+        
+        limit = 200
+        
+        i=1
+        trade = None        
+        #Test strategy until finds a trade
+        while trade == None:
+
+            rawCandles=json.loads(requests.get(f'https://api1.binance.com/api/v3/klines?symbol={symbol}&interval={interval}&startTime={lastcandle[6] - (duration * 1000 * i)}&limit=1000').content.decode())
+
+            x = limit
+
+            while (trade == None) and (x < 1000):
+                # if(x%10 == 0):
+                    # print(f'set:{i}\ncandle: {x}\ntrade:{trade}\nstartTime:{(lastcandle[6] - (duration * i)) + duration * x}\n')
+
+                ts = [candle[0] for candle in rawCandles][:x]
+                op = [candle[1] for candle in rawCandles][:x]
+                high = [candle[2] for candle in rawCandles][:x]
+                low = [candle[3] for candle in rawCandles][:x]
+                close = [candle[4] for candle in rawCandles][:x]
+                vol = [candle[5] for candle in rawCandles][:x]
+
+                formatedCandles = {'timestamp': ts, 'open': op, 'high': high, 'low': low, 'close': close, 'volume': vol}
+
+                reqdf = pandas.DataFrame(formatedCandles)
+                
+                reqdf.to_csv('../tmp/request.csv', encoding='utf-8')
+                reqdf = pandas.read_csv('../tmp/request.csv', sep=',')
+
+                strategydf = eval(f"{strategyname}Calculate(reqdf)")
+                trade = eval(f'{strategyname}Analyze(strategydf,2)')
+                x += 1
+            i += 1
+
+        #When finds a trade, graph it
+        plt, fig, ax = plotDefaults(reqdf, f'{symbol} {interval}')
+        eval(f'{strategyname}Plot(strategydf, plt, fig, ax, trade)')
+        ax.text(20, 20, 20, bbox=dict(facecolor='red', alpha=0.5))
+        print(trade['opentime'])
+        # Show the graphic
+        plt.legend()
+        plt.show()
+main()
+

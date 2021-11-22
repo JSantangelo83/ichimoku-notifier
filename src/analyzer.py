@@ -27,10 +27,6 @@ def getData(interval,symbol,limit,firstcandles=0):
     reqdf = pandas.read_csv('../tmp/request.csv', sep=',')
 
     return reqdf
-    
-
-
-
 
 def plotDefaults(reqdf, title):
     mpl.style.use('seaborn')
@@ -61,24 +57,3 @@ def plotDefaults(reqdf, title):
     ax.bar(down.index- 26,down.low-down.close,width2,bottom=down.close,color=col2)
 
     return (plt,fig,ax)
-
-def main():
-    if __name__ == '__main__':
-        #Params
-        interval='1h'
-        symbol = 'BTCUSDT'
-        limit='100'
-        firstcandles = 100
-        strategy_name = "ichimoku"
-        reqdf = getData(interval, symbol, limit, firstcandles)
-
-        plt, fig, ax = plotDefaults(reqdf, f'{symbol} {interval}')
-        strategydf = eval(f"{strategy_name}Calculate(reqdf)")
-        eval(f"{strategy_name}Plot(strategydf, plt, fig, ax, {strategy_name}Analyze(strategydf, 1))")
-        #ichimokudf = ichimokuCalculate(reqdf)
-        #ichimokuPlot(ichimokudf, plt, fig, ax, ichimokuAnalyze(ichimokudf, 1) )
-        
-        #Show the graphic
-        plt.legend()
-        plt.show()
-main()
