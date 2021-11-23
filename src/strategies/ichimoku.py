@@ -81,33 +81,30 @@ def ichimokuAnalyze(ichimokudf,margin,trade = None):
         if(result[0] and result[1] == 4): 
             sl = min(ichimokudf.ichimoku_a.iloc[-26],ichimokudf.ichimoku_b.iloc[-26]) - (ichimokudf.close.iloc[-1] * 0.01)
             tp = ichimokudf.close.iloc[-1] + ((ichimokudf.close.iloc[-1] - ichimokudf.ichimoku_b.iloc[-26]) * 2)
-            direction = 'Long'
+            direction = 'long'
         #Short
         if(result[0] and result[1] == -4):
             sl = max(ichimokudf.ichimoku_a.iloc[-26],ichimokudf.ichimoku_b.iloc[-26]) + (ichimokudf.close.iloc[-1] * 0.01)
             tp = ichimokudf.close.iloc[-1] - ((ichimokudf.ichimoku_a.iloc[-26] - ichimokudf.close.iloc[-1]) * 2)
-            direction = 'Short'
+            direction = 'short'
         #Returns
         if(sl and tp):
-            return { 'direction': direction, 'stoploss': sl, 'takeprofit': tp, 'opentime':ichimokudf.timestamp.iloc[-1] }
+            return { 'direction': direction, 'stoploss': sl, 'takeprofit': tp, 'openprice':ichimokudf.close.iloc[-1] }
         else:
             return None
                          
 def ichimokuPlot(ichimokudf, plt, fig, ax, trade=None):
-    
     if(trade != None):
-        #TODO: CHANGE 100 to limit variable
-        ax.add_patch(Rectangle((len(ichimokudf.close)-30, ichimokudf.close.iloc[-1]), 10,trade['takeprofit'] - ichimokudf.close.iloc[-1],
-             facecolor = '#B8DEAB',
-             fill=True,
-             alpha=0.75,
-             lw=5))
-        #TODO: CHANGE 100 to limit variable
-        ax.add_patch(Rectangle((len(ichimokudf.close)-30, trade['stoploss']), 10,ichimokudf.close.iloc[-1] - trade['stoploss'],
-             facecolor = '#F5A5A5',
-             alpha=0.75,
-             fill=True,
-             lw=5))
+        ax.add_patch(Rectangle((len(ichimokudf.close)-60, trade['openprice']), 10, trade['takeprofit'] - trade['openprice'],
+            facecolor='#B8DEAB',
+            fill=True,
+            alpha=0.75,
+            lw=5))
+        ax.add_patch(Rectangle((len(ichimokudf.close)-60, trade['stoploss']), 10, trade['openprice'] - trade['stoploss'],
+            facecolor='#F5A5A5',
+            alpha=0.75,
+            fill=True,
+            lw=5))
         ax.plot(ichimokudf.ichimoku_a, label='Ichimoku A', color='#53B96A', linewidth=0)
             
     ax.plot(ichimokudf.ichimoku_a, label='Ichimoku A', color='#53B96A', linewidth=0)

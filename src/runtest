@@ -5,56 +5,73 @@ from analyzer import *
 
 
 #TODO: Sequencial charge of candles
+
+def getKlines(interval,symbol,nklines):
+    lastcandle = json.loads(requests.get(f'https://api1.binance.com/api/v3/klines?symbol={symbol}&interval={interval}&limit=1').content.decode())[0]    
+    duration = lastcandle[6] - lastcandle[0]
+
+    if nklines <= 1000:
+        return json.loads(requests.get(f'https://api1.binance.com/api/v3/klines?symbol={symbol}&interval={interval}&limit={nklines}').content.decode())    
+    else:
+        ret = []
+        while nklines > 1000:
+            ret += json.loads(requests.get(f'https://api1.binance.com/api/v3/klines?symbol={symbol}&interval={interval}&limit={1000}&startTime={lastcandle[0] - (duration * nklines)}').content.decode())
+            nklines -= 1000
+        ret += json.loads(requests.get(f'https://api1.binance.com/api/v3/klines?symbol={symbol}&interval={interval}&limit={nklines}').content.decode())
+        return ret
+                                    
 def main():
-    if __name__ == '__main__':
-        #Params
-        interval = sys.argv[1]
-        symbol = sys.argv[2]        
-        strategyname = sys.argv[3]
-        lastcandle = json.loads(requests.get(f'https://api1.binance.com/api/v3/klines?symbol={symbol}&interval={interval}&limit=1').content.decode())[0]    
-        duration = lastcandle[6] - lastcandle[0]
+    #Params
+    interval = sys.argv[1]
+    symbol = sys.argv[2]        
+    strategyname = sys.argv[3]
+    nklines = int(sys.argv[4])
+
+    #the strategy minimum candles
+    limit = 200
+    #initial value for trade
+    trade = None        
+    
+    # Get n candles from binance
+    rawCandles=getKlines(interval,symbol,nklines)
+    
+    #Test strategy until finds a trade 
+    x = limit
+    while (x < len(rawCandles)):
+        ts = [candle[0] for candle in rawCandles][:x]
+        op = [candle[1] for candle in rawCandles][:x]
+        high = [candle[2] for candle in rawCandles][:x]
+        low = [candle[3] for candle in rawCandles][:x]
+        close = [candle[4] for candle in rawCandles][:x]
+        vol = [candle[5] for candle in rawCandles][:x]
+
+        formatedCandles = {'timestamp': ts, 'open': op, 'high': high, 'low': low, 'close': close, 'volume': vol}
+
+        reqdf = pandas.DataFrame(formatedCandles)
         
-        limit = 200
+        reqdf.to_csv('../tmp/request.csv', encoding='utf-8')
+        reqdf = pandas.read_csv('../tmp/request.csv', sep=',')
+
+        strategydf = eval(f"{strategyname}Calculate(reqdf)")
         
-        i=1
-        trade = None        
-        #Test strategy until finds a trade
-        while trade == None:
-
-            rawCandles=json.loads(requests.get(f'https://api1.binance.com/api/v3/klines?symbol={symbol}&interval={interval}&startTime={lastcandle[6] - (duration * 1000 * i)}&limit=1000').content.decode())
-
-            x = limit
-
-            while (trade == None) and (x < 1000):
-                # if(x%10 == 0):
-                    # print(f'set:{i}\ncandle: {x}\ntrade:{trade}\nstartTime:{(lastcandle[6] - (duration * i)) + duration * x}\n')
-
-                ts = [candle[0] for candle in rawCandles][:x]
-                op = [candle[1] for candle in rawCandles][:x]
-                high = [candle[2] for candle in rawCandles][:x]
-                low = [candle[3] for candle in rawCandles][:x]
-                close = [candle[4] for candle in rawCandles][:x]
-                vol = [candle[5] for candle in rawCandles][:x]
-
-                formatedCandles = {'timestamp': ts, 'open': op, 'high': high, 'low': low, 'close': close, 'volume': vol}
-
-                reqdf = pandas.DataFrame(formatedCandles)
+        #Only search for trades if there isnt any
+        if trade == None: trade = eval(f'{strategyname}Analyze(strategydf,2)')
+        
+        x += 1
                 
-                reqdf.to_csv('../tmp/request.csv', encoding='utf-8')
-                reqdf = pandas.read_csv('../tmp/request.csv', sep=',')
+        #graph it
+        #Show the graphic
+        if(trade != None):
+            print(f'Direction:{trade["direction"]}\nTP: {trade["takeprofit"]}\nSL:{trade["stoploss"]}\nPrice:{strategydf.close.iloc[-1]}')
+            #If it goes into TP or SL start searching another trade
+            if ((trade['direction'] == 'long') and ((strategydf.close.iloc[-1] > trade['takeprofit']) or (strategydf.close.iloc[-1] < trade['stoploss']))) or ((trade['direction'] == 'short') and ((strategydf.close.iloc[-1] < trade['takeprofit']) or (strategydf.close.iloc[-1] > trade['stoploss']))): 
+                plt, fig, ax = plotDefaults(reqdf, f'{symbol} {interval}')
+                eval(f'{strategyname}Plot(strategydf, plt, fig, ax, trade)')
+                plt.legend()
+                plt.show()
+                trade = None
+                
 
-                strategydf = eval(f"{strategyname}Calculate(reqdf)")
-                trade = eval(f'{strategyname}Analyze(strategydf,2)')
-                x += 1
-            i += 1
-
-        #When finds a trade, graph it
-        plt, fig, ax = plotDefaults(reqdf, f'{symbol} {interval}')
-        eval(f'{strategyname}Plot(strategydf, plt, fig, ax, trade)')
-        ax.text(20, 20, 20, bbox=dict(facecolor='red', alpha=0.5))
-        print(trade['opentime'])
-        # Show the graphic
-        plt.legend()
-        plt.show()
-main()
+if __name__ == '__main__':
+    main()
 
