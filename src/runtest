@@ -29,21 +29,21 @@ def main():
 
     #the strategy minimum candles
     limit = 200
-    #initial value for trade
+    #initial values
     trade = None        
-    
+    signaldisplayed = False
     # Get n candles from binance
     rawCandles=getKlines(interval,symbol,nklines)
     
     #Test strategy until finds a trade 
     x = limit
     while (x < len(rawCandles)):
-        ts = [candle[0] for candle in rawCandles][:x]
-        op = [candle[1] for candle in rawCandles][:x]
-        high = [candle[2] for candle in rawCandles][:x]
-        low = [candle[3] for candle in rawCandles][:x]
-        close = [candle[4] for candle in rawCandles][:x]
-        vol = [candle[5] for candle in rawCandles][:x]
+        ts = [candle[0] for candle in rawCandles][:x]#[-limit:]
+        op = [candle[1] for candle in rawCandles][:x]#[-limit:]
+        high = [candle[2] for candle in rawCandles][:x]#[-limit:]
+        low = [candle[3] for candle in rawCandles][:x]#[-limit:]
+        close = [candle[4] for candle in rawCandles][:x]#[-limit:]
+        vol = [candle[5] for candle in rawCandles][:x]#[-limit:]
 
         formatedCandles = {'timestamp': ts, 'open': op, 'high': high, 'low': low, 'close': close, 'volume': vol}
 
@@ -55,13 +55,21 @@ def main():
         strategydf = eval(f"{strategyname}Calculate(reqdf)")
         
         #Only search for trades if there isnt any
-        if trade == None: trade = eval(f'{strategyname}Analyze(strategydf,2)')
+        if trade == None: 
+            trade = eval(f'{strategyname}Analyze(strategydf,2)')
+            signaldisplayed = False
         
         x += 1
                 
         #graph it
         #Show the graphic
-        if(trade != None):
+        if(trade != None and signaldisplayed==False):
+            plt, fig, ax = plotDefaults(reqdf, f'{symbol} {interval}')
+            eval(f'{strategyname}Plot(strategydf, plt, fig, ax, trade)')
+            plt.legend()
+            plt.show()
+            signaldisplayed=True
+        elif(trade != None and signaldisplayed == True):
             print(f'Direction:{trade["direction"]}\nTP: {trade["takeprofit"]}\nSL:{trade["stoploss"]}\nPrice:{strategydf.close.iloc[-1]}')
             #If it goes into TP or SL start searching another trade
             if ((trade['direction'] == 'long') and ((strategydf.close.iloc[-1] > trade['takeprofit']) or (strategydf.close.iloc[-1] < trade['stoploss']))) or ((trade['direction'] == 'short') and ((strategydf.close.iloc[-1] < trade['takeprofit']) or (strategydf.close.iloc[-1] > trade['stoploss']))): 
@@ -70,6 +78,7 @@ def main():
                 plt.legend()
                 plt.show()
                 trade = None
+                signaldisplayed = False
                 
 
 if __name__ == '__main__':

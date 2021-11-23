@@ -77,30 +77,34 @@ def ichimokuAnalyze(ichimokudf,margin,trade = None):
         sl = 0
         tp = 0
         direction = ''
+
         #Long    
         if(result[0] and result[1] == 4): 
             sl = min(ichimokudf.ichimoku_a.iloc[-26],ichimokudf.ichimoku_b.iloc[-26]) - (ichimokudf.close.iloc[-1] * 0.01)
-            tp = ichimokudf.close.iloc[-1] + ((ichimokudf.close.iloc[-1] - ichimokudf.ichimoku_b.iloc[-26]) * 2)
+            tp = ichimokudf.close.iloc[-1] + ((ichimokudf.close.iloc[-1] - (sl + ichimokudf.close.iloc[-1] * 0.01)) * 2)
             direction = 'long'
         #Short
         if(result[0] and result[1] == -4):
             sl = max(ichimokudf.ichimoku_a.iloc[-26],ichimokudf.ichimoku_b.iloc[-26]) + (ichimokudf.close.iloc[-1] * 0.01)
-            tp = ichimokudf.close.iloc[-1] - ((ichimokudf.ichimoku_a.iloc[-26] - ichimokudf.close.iloc[-1]) * 2)
+            tp = ichimokudf.close.iloc[-1] - ((sl - (ichimokudf.close.iloc[-1] * 0.01) - ichimokudf.close.iloc[-1]) * 2)
             direction = 'short'
+
         #Returns
         if(sl and tp):
-            return { 'direction': direction, 'stoploss': sl, 'takeprofit': tp, 'openprice':ichimokudf.close.iloc[-1] }
+            #TODO: Improve "plotcandle" property use
+            return { 'direction': direction, 'stoploss': sl, 'takeprofit': tp, 'openprice':ichimokudf.close.iloc[-1], 'plotcandle':len(ichimokudf.close) }
         else:
             return None
                          
 def ichimokuPlot(ichimokudf, plt, fig, ax, trade=None):
     if(trade != None):
-        ax.add_patch(Rectangle((len(ichimokudf.close)-60, trade['openprice']), 10, trade['takeprofit'] - trade['openprice'],
+        # TODO: Fix SL and TP position
+        ax.add_patch(Rectangle((trade['plotcandle'], trade['openprice']), 50, trade['takeprofit'] - trade['openprice'],
             facecolor='#B8DEAB',
             fill=True,
             alpha=0.75,
             lw=5))
-        ax.add_patch(Rectangle((len(ichimokudf.close)-60, trade['stoploss']), 10, trade['openprice'] - trade['stoploss'],
+        ax.add_patch(Rectangle((trade['plotcandle'], trade['stoploss']), 50, trade['openprice'] - trade['stoploss'],
             facecolor='#F5A5A5',
             alpha=0.75,
             fill=True,
