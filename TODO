@@ -14,13 +14,13 @@ analyze:
 -ver que onda el laggin span porque parece que no se da cuenta bien si esta arriba o abajo
 -agregar que detecte si el trade se esta revirtiendo
 -revisar las entradas porque da entradas en trades ya desarrollados (sobretodo con la bl y cl, cuando se dan vuelta y se vuelven a dar vuelta da falsos positivos)
+
 calculate:
 
 
 plot:
 
 tester:
--agregar que te muestre el trade cuando lo detecta, y despues cuando se resuelve (no se entiende si la entrada esta bien dada o no)
 -agregar un resumen final con stats sobre como fue la estrategia
 
 general:

@@ -33,6 +33,7 @@ def main():
     trade = None        
     signaldisplayed = False
     # Get n candles from binance
+    closeumbrall = 2
     rawCandles=getKlines(interval,symbol,nklines)
     
     #Test strategy until finds a trade 
@@ -44,6 +45,7 @@ def main():
         low = [candle[3] for candle in rawCandles][:x]#[-limit:]
         close = [candle[4] for candle in rawCandles][:x]#[-limit:]
         vol = [candle[5] for candle in rawCandles][:x]#[-limit:]
+        x += 1
 
         formatedCandles = {'timestamp': ts, 'open': op, 'high': high, 'low': low, 'close': close, 'volume': vol}
 
@@ -53,33 +55,48 @@ def main():
         reqdf = pandas.read_csv('../tmp/request.csv', sep=',')
 
         strategydf = eval(f"{strategyname}Calculate(reqdf)")
-        
-        #Only search for trades if there isnt any
-        if trade == None: 
-            trade = eval(f'{strategyname}Analyze(strategydf,2)')
+
+        result = eval(f'{strategyname}Analyze(strategydf,2,{trade})')
+        trade = result[1] if ((result[0] == 1) and (trade == None)) else trade
+
+        #If there is not any signal then is not displaying anything
+        if result[0] == 0: 
             signaldisplayed = False
-        
-        x += 1
-                
-        #graph it
-        #Show the graphic
-        if(trade != None and signaldisplayed==False):
-            plt, fig, ax = plotDefaults(reqdf, f'{symbol} {interval}')
-            eval(f'{strategyname}Plot(strategydf, plt, fig, ax, trade)')
-            plt.legend()
-            plt.show()
-            signaldisplayed=True
-        elif(trade != None and signaldisplayed == True):
-            print(f'Direction:{trade["direction"]}\nTP: {trade["takeprofit"]}\nSL:{trade["stoploss"]}\nPrice:{strategydf.close.iloc[-1]}')
-            #If it goes into TP or SL start searching another trade
-            if ((trade['direction'] == 'long') and ((strategydf.close.iloc[-1] > trade['takeprofit']) or (strategydf.close.iloc[-1] < trade['stoploss']))) or ((trade['direction'] == 'short') and ((strategydf.close.iloc[-1] < trade['takeprofit']) or (strategydf.close.iloc[-1] > trade['stoploss']))): 
+            print('Looking for trade...')
+
+        #If there is a trade
+        if result[0] >= 1:
+            print(f'Direction:{trade["direction"]}\nTP: {trade["takeprofit"]}\nSL:{trade["stoploss"]}\nClose:{strategydf.close.iloc[-1]}\nHigh:{strategydf.high.iloc[-1]}\nLow:{strategydf.low.iloc[-1]}')
+
+            #If first
+            if((trade != None) and (not signaldisplayed)):
                 plt, fig, ax = plotDefaults(reqdf, f'{symbol} {interval}')
                 eval(f'{strategyname}Plot(strategydf, plt, fig, ax, trade)')
                 plt.legend()
                 plt.show()
-                trade = None
-                signaldisplayed = False
-                
+                signaldisplayed=True
+            #If not first
+            elif(trade != None and signaldisplayed == True):
+                #If it is reverting
+                if(result[0] == 2):
+                    if result[1] >= closeumbrall:
+                        plt, fig, ax = plotDefaults(reqdf, f'{symbol} {interval}')
+                        eval(f'{strategyname}Plot(strategydf, plt, fig, ax, trade)')
+                        print('REVERTING!')
+                        plt.legend()
+                        plt.show()
+                        trade = None
+                        signaldisplayed = False                  
+                        
+                    #If it goes into TP or SL
+                    elif ((trade['direction'] == 'long') and ((strategydf.high.iloc[-1] > trade['takeprofit']) or (strategydf.low.iloc[-1] < trade['stoploss']))) or ((trade['direction'] == 'short') and ((strategydf.low.iloc[-1] < trade['takeprofit']) or (strategydf.high.iloc[-1] > trade['stoploss']))): 
+                        plt, fig, ax = plotDefaults(reqdf, f'{symbol} {interval}')
+                        eval(f'{strategyname}Plot(strategydf, plt, fig, ax, trade)')
+                        print('SL or TP')
+                        plt.legend()
+                        plt.show()
+                        trade = None
+                        signaldisplayed = False             
 
 if __name__ == '__main__':
     main()

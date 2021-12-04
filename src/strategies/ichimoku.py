@@ -23,6 +23,8 @@ def ichimokuCalculate(reqdf):
     ichimokudf['ichimoku_base_line'] = ichimoku.ichimoku_base_line()
     ichimokudf['ichimoku_lagging_span'] = reqdf['close']
     ichimokudf['close'] = reqdf['close']
+    ichimokudf['high'] = reqdf['high']
+    ichimokudf['low'] = reqdf['low']
     ichimokudf['timestamp'] = reqdf['timestamp']
     
     ichimokudf.to_csv('../tmp/ichimoku.csv', encoding='utf-8')
@@ -38,10 +40,11 @@ def ichimokuAnalyze(ichimokudf,margin,trade = None):
         conditions = 0
         
         #Looking for revertion on conversion and baseline
-        emastatus = compareLast(ichimokudf.ichimoku_conversion_line, ichimokudf.ichimoku_base_line)
-        if trade['direction'] == 'long' and emastatus != 1: conditions += 2               
-        if trade['direction'] == 'short' and emastatus != -1: conditions += 2
+        emastatus = compareLast(ichimokudf.ichimoku_conversion_line, ichimokudf.ichimoku_base_line) + compareLast(ichimokudf.ichimoku_conversion_line, ichimokudf.ichimoku_base_line, shiftA=-1, shiftBC=-1) + compareLast(ichimokudf.ichimoku_conversion_line, ichimokudf.ichimoku_base_line, shiftA=-2, shiftBC=-2)
+        if trade['direction'] == 'long' and emastatus == -3: conditions += 2               
+        if trade['direction'] == 'short' and emastatus == 3: conditions += 2
 
+        return [2, conditions]
         
     #If there isn't any open trade then check for signals
     else:
@@ -92,9 +95,9 @@ def ichimokuAnalyze(ichimokudf,margin,trade = None):
         #Returns
         if(sl and tp):
             #TODO: Improve "plotcandle" property use
-            return { 'direction': direction, 'stoploss': sl, 'takeprofit': tp, 'openprice':ichimokudf.close.iloc[-1], 'plotcandle':len(ichimokudf.close) }
+            return [1, { 'direction': direction, 'stoploss': sl, 'takeprofit': tp, 'openprice':ichimokudf.close.iloc[-1], 'plotcandle':len(ichimokudf.close) }]
         else:
-            return None
+            return [0, None]
                          
 def ichimokuPlot(ichimokudf, plt, fig, ax, trade=None):
     if(trade != None):
