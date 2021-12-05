@@ -33,7 +33,7 @@ def main():
     trade = None        
     signaldisplayed = False
     # Get n candles from binance
-    closeumbrall = 3
+    closeumbrall = 4
     rawCandles=getKlines(interval,symbol,nklines)
     
     #Test strategy until finds a trade 

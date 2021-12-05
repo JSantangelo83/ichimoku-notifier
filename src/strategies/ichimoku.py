@@ -91,6 +91,9 @@ def ichimokuAnalyze(ichimokudf,margin,trade = None):
         emastatus = compareLast(ichimokudf.ichimoku_conversion_line, ichimokudf.ichimoku_base_line) + compareLast(ichimokudf.ichimoku_conversion_line, ichimokudf.ichimoku_base_line, shiftA=-1, shiftBC=-1) + compareLast(ichimokudf.ichimoku_conversion_line, ichimokudf.ichimoku_base_line, shiftA=-2, shiftBC=-2)
         if trade['direction'] == 'long' and emastatus == -3: conditions += 2               
         if trade['direction'] == 'short' and emastatus == 3: conditions += 2
+        #Looking for revertion by being in loss
+        if trade['direction'] == 'long' and ichimokudf.close.iloc[-1] < trade['openprice']: conditions+=1
+        if trade['direction'] == 'short' and ichimokudf.close.iloc[-1] > trade['openprice']: conditions+=1
 
         return [2, conditions]
         
