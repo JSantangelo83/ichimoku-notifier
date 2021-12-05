@@ -11,8 +11,7 @@ sql:
 
 analyze:
 -ver que hacer cuando la bl y la cl son iguales (podria ver que si son iguales x velas entonces no le da bola y la pasa por alto)
--ver que onda el laggin span porque parece que no se da cuenta bien si esta arriba o abajo
--agregar que detecte si el trade se esta revirtiendo
+-agregar que detecte si el trade se esta revirtiendo (falta laggin_span)
 -revisar las entradas porque da entradas en trades ya desarrollados (sobretodo con la bl y cl, cuando se dan vuelta y se vuelven a dar vuelta da falsos positivos)
 
 calculate:
@@ -25,3 +24,4 @@ tester:
 
 general:
 -evitar escribir el .csv para poder leerlo
+-agregar poder influir en los trades (cancelar un trade si se nota que es una poronga, ver el estado actual)

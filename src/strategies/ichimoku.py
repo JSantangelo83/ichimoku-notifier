@@ -37,8 +37,56 @@ def ichimokuAnalyze(ichimokudf,margin,trade = None):
 
     #If there is an open trade then check if it is reverting
     if(trade):
-        conditions = 0
+        #Check dynamic stop loss
+        #TODO: Improve hardcoded SL Levels
+        #TODO: Improve short|long hardcoded math
         
+        if (trade['direction'] == 'long') and (ichimokudf.close.iloc[-1] > trade['openprice']):
+                #Difference Achieved TP
+                datp = ichimokudf.high.iloc[-1] - trade['openprice']
+                #Difference TP
+                dtp = trade['takeprofit'] - trade['openprice']
+
+                #Percentaje Achieved TP
+                patp = dtp / datp
+                                
+                #25% Takeprofit --> SL = 0.1%
+                if (patp <= 4) and (trade['stoploss'] < trade['openprice']):
+                    trade['stoploss'] = trade['openprice'] + (trade['openprice'] * 0.003)
+                    return [3, trade]                
+                #50% Takeprofit --> SL = 25%
+                if (patp <= 2) and (trade['stoploss'] < (trade['takeprofit'] - ((dtp / 4) * 3))):
+                    trade['stoploss'] = trade['takeprofit'] - ((dtp / 4) * 3)
+                    return [3, trade]
+                #75% Takeprofit --> SL = 50%
+                if(patp <= 1.3) and (trade['stoploss'] < (trade['takeprofit'] - (dtp / 2))): 
+                    trade['stoploss'] = trade['takeprofit'] - (dtp / 2)
+                    return [3, trade]
+                    
+        if (trade['direction'] == 'short') and (ichimokudf.close.iloc[-1] < trade['openprice']):
+                #Difference Achieved TP
+                datp = trade['openprice'] - ichimokudf.low.iloc[-1]
+                #Difference TP
+                dtp = trade['openprice'] - trade['takeprofit']
+
+                #Percentaje Achieved TP
+                patp = dtp / datp
+
+                #25% Takeprofit --> SL = 0.1%
+                if (patp <= 4) and (trade['stoploss'] > trade['openprice']):
+                    trade['stoploss'] = trade['openprice'] - (trade['openprice'] * 0.003)
+                    return [3, trade]                
+                #50% Takeprofit --> SL = 25%
+                if(patp <= 2) and (trade['stoploss'] > (trade['takeprofit'] + ((dtp / 4) * 3))):
+                    trade['stoploss'] = trade['takeprofit'] + ((dtp / 4) * 3)
+                    return [3, trade]
+                #75% Takeprofit --> SL = 50%
+                if(patp <= 1.3) and (trade['stoploss'] > (trade['takeprofit'] + (dtp / 2))): 
+                    trade['stoploss'] = trade['takeprofit'] + (dtp / 2)
+                    return [3, trade]
+
+                    
+        conditions = 0
         #Looking for revertion on conversion and baseline
         emastatus = compareLast(ichimokudf.ichimoku_conversion_line, ichimokudf.ichimoku_base_line) + compareLast(ichimokudf.ichimoku_conversion_line, ichimokudf.ichimoku_base_line, shiftA=-1, shiftBC=-1) + compareLast(ichimokudf.ichimoku_conversion_line, ichimokudf.ichimoku_base_line, shiftA=-2, shiftBC=-2)
         if trade['direction'] == 'long' and emastatus == -3: conditions += 2               
@@ -95,7 +143,13 @@ def ichimokuAnalyze(ichimokudf,margin,trade = None):
         #Returns
         if(sl and tp):
             #TODO: Improve "plotcandle" property use
-            return [1, { 'direction': direction, 'stoploss': sl, 'takeprofit': tp, 'openprice':ichimokudf.close.iloc[-1], 'plotcandle':len(ichimokudf.close) }]
+            return [1, { 
+                        'direction': direction, 
+                        'stoploss': sl, 
+                        'takeprofit': tp, 
+                        'openprice':ichimokudf.close.iloc[-1], 
+                        'plotcandle':len(ichimokudf.close) 
+                        }]
         else:
             return [0, None]
                          
@@ -108,7 +162,7 @@ def ichimokuPlot(ichimokudf, plt, fig, ax, trade=None):
             alpha=0.75,
             lw=5))
         ax.add_patch(Rectangle((trade['plotcandle'], trade['stoploss']), 50, trade['openprice'] - trade['stoploss'],
-            facecolor='#F5A5A5',
+            facecolor='#F5A5A5' if ((trade['direction'] == 'long') and (trade['stoploss'] < trade['openprice'])) or (trade['direction'] == 'short' and (trade['stoploss'] > trade['openprice'])) else '#2F7842',
             alpha=0.75,
             fill=True,
             lw=5))
