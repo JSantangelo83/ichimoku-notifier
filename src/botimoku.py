@@ -32,7 +32,7 @@ async def on_guild_join(guild):
         ch = await guild.create_text_channel('botimoku_time')
     HelperDB.instance.setChannel(ch)
 
-async def send_trade(ctx, symbol, image_path, takeprofit, stoploss, direccionalidad, status, trade_id):
+async def send_trade(ctx, symbol, image_path, takeprofit, stoploss, direccionalidad, status, trade_id, max_duaration=(5*60)):
     users = []
     c = discord.Color.from_rgb(229, 26, 76) if not status else discord.Color.from_rgb(127, 255, 0)   
     file = discord.File(fp=image_path, filename="image.png") 
@@ -48,13 +48,16 @@ async def send_trade(ctx, symbol, image_path, takeprofit, stoploss, direccionali
 
     def _check(i: discord.Interaction, b):
         return i.message == msg 
-
-    while(True):
+    end_time = time.time() + max_duaration 
+    exitw = True
+    while(exitw):
         inter, but = await client.wait_for('button_click', check=_check)
         button = but.custom_id.split(":")
         trade_id = button[1]
         which_button = button[0]
         await inter.defer()
+        if(time.time() > end_time):
+           exitw = False 
         if(inter.user_id in users and which_button == "ok"):
             continue
         if(which_button == "ok"):

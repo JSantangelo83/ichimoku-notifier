@@ -36,6 +36,8 @@ class Database:
                                             value int,
                                             close_umbrall tinyint NOT NULL,
                                             auto_operate boolean
+                                            apikey char(200) NOT NULL UNIQUE,
+                                            secretkey char(200) NOT NULL UNIQUE,
                                         ); """
 
         sqlCreateTradesTable = """CREATE TABLE IF NOT EXISTS trades (

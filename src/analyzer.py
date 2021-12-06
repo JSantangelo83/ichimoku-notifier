@@ -65,3 +65,26 @@ def saveTrade(strategydf, trade):
     direction = 'L' if trade['direction'] == 'long' else 'S'
 
     os.system(f'echo "{direction} {profit}% {trade["reason"]} {result}" >> ../tmp/trades-results')
+
+
+
+def bot_rutine(interval, symbol, strategyname):
+    rawCandles = json.loads(requests.get(f'https://api1.binance.com/api/v3/klines?symbol={symbol}&interval={interval}&limit={300}').content.decode())    
+
+     
+    ts = [candle[0] for candle in rawCandles]
+    op = [candle[1] for candle in rawCandles]
+    high = [candle[2] for candle in rawCandles]
+    low = [candle[3] for candle in rawCandles]
+    close = [candle[4] for candle in rawCandles]
+    vol = [candle[5] for candle in rawCandles]
+    formatedCandles = {'timestamp': ts, 'open': op, 'high': high, 'low': low, 'close': close, 'volume': vol}
+    trade = None 
+    reqdf = pandas.DataFrame(formatedCandles)
+    reqdf.to_csv('../tmp/request.csv', encoding='utf-8')
+    reqdf = pandas.read_csv('../tmp/request.csv', sep=',')
+    strategydf = eval(f"{strategyname}Calculate(reqdf)")
+    result = eval(f'{strategyname}Analyze(strategydf,2,{trade})')
+    plt, fig, ax = plotDefaults(reqdf, f'{symbol} {interval}')
+    eval(f'{strategyname}Plot(strategydf, plt, fig, ax, trade)')
+
