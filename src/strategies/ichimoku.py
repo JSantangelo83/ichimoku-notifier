@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-import ta,requests,json,pandas
+import ta,requests,json,pandas,os
 from ta.trend import IchimokuIndicator
 from ta.utils import dropna
 from matplotlib.patches import Rectangle
@@ -52,7 +52,7 @@ def ichimokuAnalyze(ichimokudf,margin,trade = None):
                                 
                 #25% Takeprofit --> SL = 0.1%
                 if (patp <= 4) and (trade['stoploss'] < trade['openprice']):
-                    trade['stoploss'] = trade['openprice'] + (trade['openprice'] * 0.003)
+                    trade['stoploss'] = trade['openprice'] + (trade['openprice'] * 0.01)
                     return [3, trade]                
                 #50% Takeprofit --> SL = 25%
                 if (patp <= 2) and (trade['stoploss'] < (trade['takeprofit'] - ((dtp / 4) * 3))):
@@ -74,7 +74,7 @@ def ichimokuAnalyze(ichimokudf,margin,trade = None):
 
                 #25% Takeprofit --> SL = 0.1%
                 if (patp <= 4) and (trade['stoploss'] > trade['openprice']):
-                    trade['stoploss'] = trade['openprice'] - (trade['openprice'] * 0.003)
+                    trade['stoploss'] = trade['openprice'] - (trade['openprice'] * 0.01)
                     return [3, trade]                
                 #50% Takeprofit --> SL = 25%
                 if(patp <= 2) and (trade['stoploss'] > (trade['takeprofit'] + ((dtp / 4) * 3))):

@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 #Imports
-import ta,requests,json,pandas
+import ta,requests,json,pandas,os
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib.patches import Rectangle
@@ -57,3 +57,20 @@ def plotDefaults(reqdf, title):
     ax.bar(down.index- 26,down.low-down.close,width2,bottom=down.close,color=col2)
 
     return (plt,fig,ax)
+
+def saveTrade(strategydf, trade):
+    profit = "{:.2f}".format((((strategydf.close.iloc[-1] - trade['openprice']) * 100) / trade['openprice']))# * (-1 if trade['openprice'] > strategydf.close.iloc[-1] else 1))
+    result = 'Good' if (((strategydf.close.iloc[-1] > trade['openprice']) or (trade['stoploss'] > trade['openprice'])) and (trade['direction']=='long')) or (((strategydf.close.iloc[-1] < trade['openprice']) or (trade['stoploss'] < trade['openprice'])) and (trade['direction']=='short')) else 'Bad'
+    direction = 'L' if trade['direction'] == 'long' else 'S'
+    
+    #tradeResult = {
+    #            'profit':profit,
+    #            'result':result,
+    #        }
+
+    #reqdf = pandas.DataFrame(tradeResult)
+    #
+    #reqdf.to_csv('../tmp/request.csv', encoding='utf-8')
+    #reqdf = pandas.read_csv('../tmp/request.csv', sep=',')
+
+    os.system(f'echo "{direction} | {profit}% | {result}" >> ../tmp/trades-results')

@@ -16,11 +16,10 @@ analyze:
 
 calculate:
 
-
 plot:
 
 tester:
--agregar un resumen final con stats sobre como fue la estrategia
+-Revisar el resumen final (usar SL o TP en vez de Close, Agregar motivo de cierre del trade)
 
 general:
 -evitar escribir el .csv para poder leerlo

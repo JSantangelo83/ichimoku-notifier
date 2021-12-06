@@ -33,7 +33,7 @@ def main():
     trade = None        
     signaldisplayed = False
     # Get n candles from binance
-    closeumbrall = 4
+    closeumbrall = 3
     rawCandles=getKlines(interval,symbol,nklines)
     
     #Test strategy until finds a trade 
@@ -73,30 +73,32 @@ def main():
                 plt, fig, ax = plotDefaults(reqdf, f'{symbol} {interval}')
                 eval(f'{strategyname}Plot(strategydf, plt, fig, ax, trade)')
                 plt.legend()
-                plt.show()
+               #plt.show()
                 signaldisplayed=True
             #If not first
             elif(trade != None and signaldisplayed == True):
                 #If it is reverting
                 if(result[0] == 2):
                     if result[1] >= closeumbrall:
-                        plt, fig, ax = plotDefaults(reqdf, f'{symbol} {interval}')
-                        eval(f'{strategyname}Plot(strategydf, plt, fig, ax, trade)')
+                       #plt, fig, ax = plotDefaults(reqdf, f'{symbol} {interval}')
+                       #eval(f'{strategyname}Plot(strategydf, plt, fig, ax, trade)')
                         print('REVERTING!')
-                        plt.legend()
-                        plt.show()
+                       #plt.legend()
+                        saveTrade(strategydf, trade)
+                       #plt.show()
                         trade = None
                         signaldisplayed = False                  
-                        
                     #If it goes into TP or SL
                     elif ((trade['direction'] == 'long') and ((strategydf.high.iloc[-1] > trade['takeprofit']) or (strategydf.low.iloc[-1] < trade['stoploss']))) or ((trade['direction'] == 'short') and ((strategydf.low.iloc[-1] < trade['takeprofit']) or (strategydf.high.iloc[-1] > trade['stoploss']))): 
-                        plt, fig, ax = plotDefaults(reqdf, f'{symbol} {interval}')
-                        eval(f'{strategyname}Plot(strategydf, plt, fig, ax, trade)')
+                       #plt, fig, ax = plotDefaults(reqdf, f'{symbol} {interval}')
+                       #eval(f'{strategyname}Plot(strategydf, plt, fig, ax, trade)')
                         print('SL or TP')
-                        plt.legend()
-                        plt.show()
+                       #plt.legend()
+                        saveTrade(strategydf, trade)
+                       #plt.show()
                         trade = None
                         signaldisplayed = False             
+
 
 if __name__ == '__main__':
     main()
