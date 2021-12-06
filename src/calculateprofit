@@ -2,3 +2,34 @@
 import sys,os
 
 
+
+def main():
+    riesgo = 0.25
+    test = "test8"
+    money = 20
+    palanca = 5
+
+    with open(f"../tmp/tests/{test}") as f:
+        print(f.readline(), end="")
+        print(f.readline(), end="")
+        print(f.readline(), end="")
+        for trades in f:
+            trade = trades.replace("\n", "").split(" ")
+            trademoney = money*riesgo
+            if(trade[3] == "Good"):
+                profit = (abs(float(trade[1].replace("%", ""))) /100)*(trademoney)
+                money += profit *palanca
+            elif(trade[3] == "Bad"):
+                profint = (abs(float(trade[1].replace("%", ""))) /100)*(trademoney)
+                money -= profint * palanca
+            if(money < 0):
+                print(trade)
+                print("te fundiste flaco")
+                break
+        print(money)
+
+
+
+
+main()
+
