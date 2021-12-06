@@ -59,18 +59,9 @@ def plotDefaults(reqdf, title):
     return (plt,fig,ax)
 
 def saveTrade(strategydf, trade):
-    profit = "{:.2f}".format((((strategydf.close.iloc[-1] - trade['openprice']) * 100) / trade['openprice']))# * (-1 if trade['openprice'] > strategydf.close.iloc[-1] else 1))
-    result = 'Good' if (((strategydf.close.iloc[-1] > trade['openprice']) or (trade['stoploss'] > trade['openprice'])) and (trade['direction']=='long')) or (((strategydf.close.iloc[-1] < trade['openprice']) or (trade['stoploss'] < trade['openprice'])) and (trade['direction']=='short')) else 'Bad'
+    closeprice = trade['stoploss'] if trade['reason'] == 'SL' else trade['takeprofit'] if trade['reason'] == 'TP' else strategydf.close.iloc[-1]
+    profit = '{:.2f}'.format(((closeprice - trade['openprice']) * 100) / trade['openprice'])
+    result = 'Good' if ((closeprice > trade['openprice']) and trade['direction'] == 'long') or ((closeprice < trade['openprice']) and trade['direction'] == 'short') else 'Bad'
     direction = 'L' if trade['direction'] == 'long' else 'S'
-    
-    #tradeResult = {
-    #            'profit':profit,
-    #            'result':result,
-    #        }
 
-    #reqdf = pandas.DataFrame(tradeResult)
-    #
-    #reqdf.to_csv('../tmp/request.csv', encoding='utf-8')
-    #reqdf = pandas.read_csv('../tmp/request.csv', sep=',')
-
-    os.system(f'echo "{direction} | {profit}% | {result}" >> ../tmp/trades-results')
+    os.system(f'echo "{direction} {profit}% {trade["reason"]} {result}" >> ../tmp/trades-results')

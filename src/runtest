@@ -70,34 +70,46 @@ def main():
 
             #If first
             if((trade != None) and (not signaldisplayed)):
-                plt, fig, ax = plotDefaults(reqdf, f'{symbol} {interval}')
-                eval(f'{strategyname}Plot(strategydf, plt, fig, ax, trade)')
-                plt.legend()
-               #plt.show()
+                #Feedback
+                # plt, fig, ax = plotDefaults(reqdf, f'{symbol} {interval}')
+                # eval(f'{strategyname}Plot(strategydf, plt, fig, ax, trade)')
+                # plt.legend()
+                # plt.show()
+                #End Feedback
+                
                 signaldisplayed=True
             #If not first
             elif(trade != None and signaldisplayed == True):
-                #If it is reverting
                 if(result[0] == 2):
+                    closed = False
+                    #If it is reverting
                     if result[1] >= closeumbrall:
-                       #plt, fig, ax = plotDefaults(reqdf, f'{symbol} {interval}')
-                       #eval(f'{strategyname}Plot(strategydf, plt, fig, ax, trade)')
                         print('REVERTING!')
-                       #plt.legend()
+                        trade['reason'] = 'RV'
+                        closed = True
+                    #If it goes into TP
+                    elif ((trade['direction'] == 'long') and (strategydf.high.iloc[-1] > trade['takeprofit'])) or ((trade['direction'] == 'short') and (strategydf.low.iloc[-1] < trade['takeprofit'])):
+                        print('TP!')
+                        trade['reason'] = 'TP'
+                        closed = True
+                    #If it goes into SL
+                    elif ((trade['direction'] == 'long') and (strategydf.low.iloc[-1] < trade['stoploss'])) or ((trade['direction'] == 'short') and (strategydf.high.iloc[-1] > trade['stoploss'])):
+                        print('TP!')
+                        trade['reason'] = 'TP'
+                        closed = True
+                    #If the trade was closed
+                    if closed:
                         saveTrade(strategydf, trade)
-                       #plt.show()
+                        #Feedback
+                        # plt, fig, ax = plotDefaults(reqdf, f'{symbol} {interval}')
+                        # eval(f'{strategyname}Plot(strategydf, plt, fig, ax, trade)')
+                        # plt.legend()
+                        # plt.show()
+                        # #End Feedback
+                        
                         trade = None
-                        signaldisplayed = False                  
-                    #If it goes into TP or SL
-                    elif ((trade['direction'] == 'long') and ((strategydf.high.iloc[-1] > trade['takeprofit']) or (strategydf.low.iloc[-1] < trade['stoploss']))) or ((trade['direction'] == 'short') and ((strategydf.low.iloc[-1] < trade['takeprofit']) or (strategydf.high.iloc[-1] > trade['stoploss']))): 
-                       #plt, fig, ax = plotDefaults(reqdf, f'{symbol} {interval}')
-                       #eval(f'{strategyname}Plot(strategydf, plt, fig, ax, trade)')
-                        print('SL or TP')
-                       #plt.legend()
-                        saveTrade(strategydf, trade)
-                       #plt.show()
-                        trade = None
-                        signaldisplayed = False             
+                        signaldisplayed = False
+                        closed = False         
 
 
 if __name__ == '__main__':
