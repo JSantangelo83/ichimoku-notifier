@@ -17,9 +17,10 @@ analyze:
 calculate:
 
 plot:
+-Revisar que no se ploteen todas las velas siempre, solo las 'n' ultimas (va demasiado lento y no se entiende el grafico por la definicion)
 
 tester:
--Revisar el resumen final (usar SL o TP en vez de Close, Agregar motivo de cierre del trade)
+
 
 general:
 -evitar escribir el .csv para poder leerlo
